@@ -38,4 +38,24 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void readBalance(ReadBalanceRequest request, StreamObserver<ReadBalanceResponse> responseObserver) {
+        System.out.println("NodeServiceImpl: readBalance");
+
+        String walletId = request.getWalletId();
+
+        state.readBalance(walletId);
+
+        ReadBalanceResponse response = ReadBalanceResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
+    }
+
+
+
+
+
+
 }

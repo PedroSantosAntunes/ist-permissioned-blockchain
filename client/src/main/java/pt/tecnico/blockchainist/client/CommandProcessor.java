@@ -8,9 +8,6 @@ import java.util.regex.Pattern;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 import pt.tecnico.blockchainist.contract.*;
-// import pt.tecnico.blockchainist.contract.CreateWalletRequest;
-// import pt.tecnico.blockchainist.contract.CreateWalletResponse;
-// import pt.tecnico.blockchainist.contract.NodeServiceGrpc;
 
 public class CommandProcessor {
 
@@ -170,8 +167,25 @@ public class CommandProcessor {
         Integer nodeIndex = Integer.parseInt(split[2]);
         Integer nodeDelay = Integer.parseInt(split[3]);
 
-        // TODO
-        System.out.println("TODO: readBalance(" + walletId + ")");
+        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        
+
+        ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
+        
+        try{
+            long balance = stub.readBalance(request).getBalance();
+            System.out.println(balance);
+
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " +
+                    e.getStatus().getDescription()); // The same exception description provided in the server side
+        }
+        
+
+
+        
+
+
     }
 
     /**
