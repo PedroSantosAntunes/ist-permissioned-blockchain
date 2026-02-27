@@ -7,6 +7,12 @@ package pt.tecnico.blockchainist.contract;
 // the .proto file.
 option java_multiple_files = true;
 
+// Used to ensure uniform responses.
+enum Status {
+  OK = 0;
+  ERROR = 1;
+}
+
 message CreateWalletRequest {
   string userId = 1;
   string walletId = 2;
