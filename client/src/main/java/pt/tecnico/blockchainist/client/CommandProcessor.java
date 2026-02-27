@@ -98,6 +98,11 @@ public class CommandProcessor {
         scanner.close();
     }
 
+    /**
+     * Request for the creation of a wallet (criaCarteira)
+     * @param split - contains: userId, walletId, nodeIndex, nodeDelay
+     * @param isBlocking
+     */
     private void create(String[] split, boolean isBlocking) {
         this.checkCreateCommandArgs(split);
 
@@ -112,6 +117,11 @@ public class CommandProcessor {
         System.out.println("TODO: createWallet(" + userId + ", " + walletId + ")");
     }
 
+    /**
+     * Request for the deletion of a wallet (eliminaCarteira)
+     * @param split
+     * @param isBlocking
+     */
     private void delete(String[] split, boolean isBlocking) {
         this.checkDeleteCommandArgs(split);
 
@@ -126,6 +136,11 @@ public class CommandProcessor {
         System.out.println("TODO: deleteWallet(" + userId + ", " + walletId + ")");
     }
 
+    /**
+     * Request the balance of a wallet (leSaldo)
+     * @param split
+     * @param isBlocking
+     */
     private void balance(String[] split, boolean isBlocking) {
         this.checkBalanceCommandArgs(split);
 
@@ -139,6 +154,11 @@ public class CommandProcessor {
         System.out.println("TODO: readBalance(" + walletId + ")");
     }
 
+    /**
+     * Request to transfer a certain amount from one wallet to another (transfere)
+     * @param split
+     * @param isBlocking
+     */
     private void transfer(String[] split, boolean isBlocking) {
         this.checkTransferCommandArgs(split);
 
@@ -155,6 +175,10 @@ public class CommandProcessor {
         System.out.println("TODO: transfer(" + sourceUserId + ", " + sourceWalletId + ", " + destinationWalletId + ", " + amount + ")");
     }
 
+    /**
+     * Request current blockchain state (leBlockchain)
+     * @param split
+     */
     private void debugBlockchainState(String[] split) {
         this.checkDebugBlockchainStateArgs(split);
 
