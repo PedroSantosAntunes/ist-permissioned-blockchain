@@ -53,9 +53,19 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     }
 
+    @Override
+    public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
+        System.out.println("NodeServiceImpl: transfer");
 
+        String srcUserId = request.getSrcUserId();
+        String srcWalletId = request.getSrcWalletId();
+        String dstWalletId = request.getDstWalletId();
+        Long amount = request.getValue();
 
+        state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
 
-
-
+        TransferResponse response = TransferResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
 }

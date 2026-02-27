@@ -205,8 +205,25 @@ public class CommandProcessor {
         Integer nodeIndex = Integer.parseInt(split[5]);
         Integer nodeDelay = Integer.parseInt(split[6]);
 
+
+        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        
+
+        TransferRequest request =  TransferRequest.newBuilder()
+                                    .setSrcUserId(sourceUserId)
+                                    .setSrcWalletId(sourceWalletId)
+                                    .setDstWalletId(destinationWalletId)
+                                    .setValue(amount)
+                                    .build();
+
+        try{
+            TransferResponse response = stub.transfer(request);
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception with description: " +
+                    e.getStatus().getDescription()); // The same exception description provided in the server side
+        }
+
         // TODO
-        System.out.println("TODO: transfer(" + sourceUserId + ", " + sourceWalletId + ", " + destinationWalletId + ", " + amount + ")");
     }
 
     /**
