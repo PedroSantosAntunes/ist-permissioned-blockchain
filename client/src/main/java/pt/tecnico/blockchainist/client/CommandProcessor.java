@@ -144,9 +144,16 @@ public class CommandProcessor {
         String walletId = split[2];
         Integer nodeIndex = Integer.parseInt(split[3]);
         Integer nodeDelay = Integer.parseInt(split[4]);
-
+        DeleteWalletResponse response;
+        NodeServiceGrpc.NodeServiceBlockingStub stub = this.nodes.get(nodeIndex).getStub();
         // TODO
-        System.out.println("TODO: deleteWallet(" + userId + ", " + walletId + ")");
+        System.out.println("Delete Wallet: deleteWallet(" + userId + ", " + walletId + ")");
+        DeleteWalletRequest request = DeleteWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
+        try {
+            response = stub.deleteWallet(request);
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception: " + e.getStatus().getDescription());
+        }
     }
 
     /**

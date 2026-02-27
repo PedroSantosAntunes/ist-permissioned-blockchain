@@ -21,6 +21,7 @@ public class NodeState {
 
     public void deleteWallet(String userId, String walletId) {
         // TODO
+        System.out.println("NodeState: deleteWallet called!\n" + userId + "\n" + walletId); 
     }
 
     public void transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {

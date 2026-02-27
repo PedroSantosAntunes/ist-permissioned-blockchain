@@ -24,4 +24,18 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     }
+
+    @Override
+    public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) { 
+        
+        System.out.println("NodeServiceImpl: deleteWallet");
+        String userId = request.getUserId();
+        String walletId = request.getWalletId();
+
+        state.deleteWallet(userId, walletId);
+
+        DeleteWalletResponse response = DeleteWalletResponse.newBuilder().build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+    }
 }
