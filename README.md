@@ -3,7 +3,7 @@
 Distributed Systems Project 2026
 
 *(fill the line below with the group identifier, for example A25 or T25, and then delete this line)*  
-**Group GXX**
+**Group T46**
 
 *(choose one of the following levels and erase the other one)*  
 **Difficulty level: I am Death incarnate! | Bring 'em on!**
@@ -17,13 +17,11 @@ code dependency management, to ensure your code runs using the correct component
 
 ### Team Members
 
-*(fill the table below with the team members, and then delete this line)*
-
-| Number | Name              | User                             | Email                               |
-|--------|-------------------|----------------------------------|-------------------------------------|
-| 11111  | Alice Distributed | <https://github.com/AliceUser>   | <mailto:alice@tecnico.ulisboa.pt>   |
-| 22222  | Bob Systems       | <https://github.com/BobUser>     | <mailto:bob@tecnico.ulisboa.pt>     |
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt> |
+| Number | Name              | User                                    | Email                                               |
+|--------|-------------------|-----------------------------------------|-----------------------------------------------------|
+| 63484  | Michael Maycock   | <https://github.com/updatemike>         | <mailto:michael.maycock@tecnico.ulisboa.pt>         |
+| 110306 | Diogo Fernandes   | <https://github.com/diiogofer>          | <mailto:diogo.sendim.fernandes@tecnico.ulisboa.pt>  |
+| 106526 | Pedro Antunes     | <https://github.com/PedroSantosAntunes> | <mailto:pedro.santos.antunes@tecnico.ulisboa.pt>    |
 
 ## Getting Started
 
