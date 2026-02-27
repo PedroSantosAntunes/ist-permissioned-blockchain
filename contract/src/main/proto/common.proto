@@ -10,7 +10,10 @@ option java_multiple_files = true;
 // Used to ensure uniform responses.
 enum Status {
   OK = 0;
-  ERROR = 1;
+  BAD_USER_ERR = 1;
+  BAD_WALLET_ERR = 2;
+  UNIQUE_USER_ERR = 3;
+  UNIQUE_WALLET_ERR = 4;
 }
 
 message CreateWalletRequest {

@@ -4,6 +4,9 @@ import pt.tecnico.blockchainist.contract.*;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 
+import static io.grpc.Status.ALREADY_EXISTS;
+import static io.grpc.Status.INVALID_ARGUMENT;
+
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     private final NodeState state;
 
@@ -18,11 +21,24 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        state.createWallet(userId, walletId);
-
-        CreateWalletResponse response = CreateWalletResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        Status result = state.createWallet(userId, walletId);
+        if (result == result.BAD_USER_ERR) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid User Format: use only numbers and letter without spaces").asRuntimeException());
+        } 
+        else if (result == result.BAD_WALLET_ERR) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letter without spaces").asRuntimeException());
+        }
+        else if (result == result.UNIQUE_USER_ERR) {
+            responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated User: user already exists").asRuntimeException());
+        }
+        else if (result == result.UNIQUE_WALLET_ERR) {
+            responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated Wallet: wallet already exists").asRuntimeException());
+        } 
+        else {
+            CreateWalletResponse response = CreateWalletResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 
     @Override

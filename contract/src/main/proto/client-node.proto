@@ -9,7 +9,9 @@ import "common.proto";
 // the .proto file.
 option java_multiple_files = true;
 
-message CreateWalletResponse {}
+message CreateWalletResponse {
+  Status status = 1;
+}
 
 message DeleteWalletResponse {}
 

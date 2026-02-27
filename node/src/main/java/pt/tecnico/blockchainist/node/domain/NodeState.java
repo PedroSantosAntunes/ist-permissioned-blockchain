@@ -3,7 +3,9 @@ package pt.tecnico.blockchainist.node.domain;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import pt.tecnico.blockchainist.contract.CreateWalletResponse;
+// Checks
+import java.util.regex.Pattern;
+import pt.tecnico.blockchainist.contract.Status;
 
 public class NodeState {
     
@@ -25,19 +27,33 @@ public class NodeState {
         balances.put(BC_WALLET, BC_INIT_BALANCE);
     }
 
-    public synchronized void createWallet(String userId, String walletId) {
-        // TODO
-        System.out.println("NodeState: createWallet called!\n" + userId + "\n" + walletId);
+    public synchronized Status createWallet(String userId, String walletId) {
 
-        if (userId == null || userId.isBlank()) throw new IllegalArgumentException("Bad user id: " + userId);
-        if (walletId == null || userId.isBlank()) throw new IllegalArgumentException("Bad wallet id: " + walletId);
-        if (wallets.containsKey(walletId)) throw new IllegalArgumentException("Wallet id already exists: " + walletId);
+        System.err.println("NodeState: createWallet called!\n\t" + userId + "\n\t" + walletId);
+
+        if (userId == null || !checkFormat(userId)) {
+            System.err.println("Bad user id: " + userId);
+            return Status.BAD_USER_ERR;
+        }
+        if (walletId == null || !checkFormat(walletId)) {
+            System.err.println("Bad wallet id: " + walletId);
+            return Status.BAD_WALLET_ERR;
+        }
+        if (checkUserUniqueness(userId)) {
+            System.err.println("User id already exists: " + userId);
+            return Status.UNIQUE_USER_ERR;
+        }
+        if (checkWalletUniqueness(walletId)) {
+            System.err.println("Wallet id already exists: " + walletId);
+            return Status.UNIQUE_WALLET_ERR;
+        }
 
         wallets.put(walletId, userId);
         balances.put(walletId, 0L);
 
-        System.out.println("wallets = " + wallets);
-        System.out.println("balances    = " + balances);
+        System.err.println("\twallets = " + wallets);
+        System.err.println("\tbalances = " + balances);
+        return Status.OK;
     }
 
     public void deleteWallet(String userId, String walletId) {
@@ -54,6 +70,21 @@ public class NodeState {
         return -1L;
     }
 
-    // TODO Add other operations (e.g., getBlockchainState)
+    // TODO: Ask teacher: this checks are also important in the server side
+    private boolean checkFormat(String input) {
+        Pattern pattern = Pattern.compile("^[A-Za-z0-9]+");
+        if (!pattern.matcher(input).matches() || input.isBlank()) {
+            return false;
+        }
+        return true;
+    }
 
+    private boolean checkUserUniqueness(String userId) {
+        return wallets.containsValue(userId);
+    }
+
+    private boolean checkWalletUniqueness(String walletId) {
+        return wallets.containsKey(walletId);
+    }
+    // TODO Add other operations (e.g., getBlockchainState)
 }

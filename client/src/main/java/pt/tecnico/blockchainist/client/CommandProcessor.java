@@ -116,14 +116,14 @@ public class CommandProcessor {
         Integer nodeDelay = Integer.parseInt(split[4]);
         NodeServiceGrpc.NodeServiceBlockingStub stub = this.nodes.get(nodeIndex).getStub();
 
-        // TODO
-        System.out.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
+        // System.err.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
 
         CreateWalletRequest request = CreateWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            CreateWalletResponse response = stub.createWallet(request);
+            Status response = stub.createWallet(request).getStatus();
+            displayOperationResult(commandNumber, response);
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception: " + e.getStatus().getDescription());
+            System.err.println(commandCounter + " " + e.getStatus().getDescription());
         }
     }
 
@@ -177,15 +177,8 @@ public class CommandProcessor {
             System.out.println(balance);
 
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " +
-                    e.getStatus().getDescription()); // The same exception description provided in the server side
+            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
         }
-        
-
-
-        
-
-
     }
 
     /**
@@ -406,5 +399,9 @@ public class CommandProcessor {
                 "- B <node_index>\n" +
                 "- P <integer>\n" +
                 "- X\n");
+    }
+
+    private static void displayOperationResult(Long commandNumber, Status statusMessage) {
+        System.out.println(commandNumber + " " + statusMessage);
     }
 }
