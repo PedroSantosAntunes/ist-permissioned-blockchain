@@ -5,7 +5,12 @@ import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
+import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
+import pt.tecnico.blockchainist.contract.*;
+// import pt.tecnico.blockchainist.contract.CreateWalletRequest;
+// import pt.tecnico.blockchainist.contract.CreateWalletResponse;
+// import pt.tecnico.blockchainist.contract.NodeServiceGrpc;
 
 public class CommandProcessor {
 
@@ -112,9 +117,17 @@ public class CommandProcessor {
         String walletId = split[2];
         Integer nodeIndex = Integer.parseInt(split[3]);
         Integer nodeDelay = Integer.parseInt(split[4]);
+        NodeServiceGrpc.NodeServiceBlockingStub stub = this.nodes.get(nodeIndex).getStub();
 
         // TODO
-        System.out.println("TODO: createWallet(" + userId + ", " + walletId + ")");
+        System.out.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
+
+        CreateWalletRequest request = CreateWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
+        try {
+            CreateWalletResponse response = stub.createWallet(request);
+        } catch (StatusRuntimeException e) {
+            System.out.println("Caught exception: " + e.getStatus().getDescription());
+        }
     }
 
     /**

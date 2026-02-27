@@ -1,5 +1,6 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import pt.tecnico.blockchainist.contract.CreateWalletResponse;
 
 public class NodeState {
     
@@ -12,15 +13,17 @@ public class NodeState {
         // TODO
     }
 
-    private void createWallet(String userId, String walletId) {
+    public void createWallet(String userId, String walletId) {
+        // TODO
+
+        System.out.println("NodeState: createWallet called!\n" + userId + "\n" + walletId);
+    }
+
+    public void deleteWallet(String userId, String walletId) {
         // TODO
     }
 
-    private void deleteWallet(String userId, String walletId) {
-        // TODO
-    }
-
-    private void transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    public void transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         // TODO
     }
 
