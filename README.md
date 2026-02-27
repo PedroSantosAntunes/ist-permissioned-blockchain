@@ -2,11 +2,10 @@
 
 Distributed Systems Project 2026
 
-*(fill the line below with the group identifier, for example A25 or T25, and then delete this line)*  
 **Group T46**
 
 *(choose one of the following levels and erase the other one)*  
-**Difficulty level: I am Death incarnate! | Bring 'em on!**
+**Difficulty level: I am Death incarnate!**
 
 
 ### Code Identification
