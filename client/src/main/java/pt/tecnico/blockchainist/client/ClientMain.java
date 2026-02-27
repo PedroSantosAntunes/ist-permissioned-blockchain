@@ -1,8 +1,8 @@
 package pt.tecnico.blockchainist.client;
 
 import java.util.ArrayList;
-
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
+
 
 public class ClientMain {
 
