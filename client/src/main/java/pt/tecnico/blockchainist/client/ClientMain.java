@@ -47,6 +47,10 @@ public class ClientMain {
 
         CommandProcessor processor = new CommandProcessor(nodes);
         processor.userInputLoop();
+
+        for(ClientNodeService node : nodes){
+            node.closeChannel();
+        }
     }
 
     private static void printUsage() {
