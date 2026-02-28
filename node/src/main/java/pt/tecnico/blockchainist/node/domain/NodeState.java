@@ -9,6 +9,7 @@ import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
 import pt.tecnico.blockchainist.contract.Status;
+import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.transaction.*;
 
 public class NodeState {
@@ -18,7 +19,7 @@ public class NodeState {
     // - The balance of each wallet
     // - The transaction ledger (up to A.2, a chain of individual transactions; after B.1, a chain of blocks)
 
-    private final LinkedList<Transaction> transactions = new LinkedList<Transaction>();
+    private final LinkedList<TransactionRecord> transactions = new LinkedList<TransactionRecord>();
     int local_transaction_counter = 0;
 
     private final Map<String, String> wallets = new ConcurrentHashMap<>();
@@ -55,8 +56,8 @@ public class NodeState {
         }
         // Transaction
         // TODO A.2
-        Transaction transaction = new CreateWalletTransaction(local_transaction_counter, userId, walletId);
-        transactions.addFirst(transaction);
+        TransactionRecord transaction = new CreateWalletTransaction(local_transaction_counter, userId, walletId);
+        transactions.add(transaction);
         local_transaction_counter++;
 
         // Execute
@@ -100,8 +101,8 @@ public class NodeState {
         
         // Transaction
         // TODO A.2
-        Transaction transaction = new DeleteWalletTransaction(local_transaction_counter, userId, walletId);
-        transactions.addFirst(transaction);
+        TransactionRecord transaction = new DeleteWalletTransaction(local_transaction_counter, userId, walletId);
+        transactions.add(transaction);
         local_transaction_counter++;
 
         // Execute
@@ -142,8 +143,8 @@ public class NodeState {
 
         // Transaction
         // TODO A.2
-        Transaction transaction = new TransferTransaction(local_transaction_counter, srcUserId, srcWalletId, dstWalletId, amount);
-        transactions.addFirst(transaction);
+        TransactionRecord transaction = new TransferTransaction(local_transaction_counter, srcUserId, srcWalletId, dstWalletId, amount);
+        transactions.add(transaction);
         local_transaction_counter++;
 
         // EXECUTE
@@ -163,6 +164,13 @@ public class NodeState {
         System.out.println("\t" + balance);
         return balance;  
     }
+
+    // todo change return type to list of transactions
+    public LinkedList<TransactionRecord> getBlockchainState(){    
+        return transactions;
+    }
+
+
 
     // TODO: Ask teacher: this checks are also important in the server side
     private boolean checkFormat(String input) {
@@ -187,7 +195,6 @@ public class NodeState {
     }
 
     private boolean checkEnoughBalance (long balanceSrc, long amount){
-        return balanceSrc - amount > 0; 
+        return balanceSrc - amount >= 0; 
     }
-    // TODO Add other operations (e.g., getBlockchainState)
 }

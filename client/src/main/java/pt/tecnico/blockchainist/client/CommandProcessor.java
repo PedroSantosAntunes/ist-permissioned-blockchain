@@ -1,6 +1,7 @@
 package pt.tecnico.blockchainist.client;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
@@ -226,8 +227,25 @@ public class CommandProcessor {
 
         Integer nodeIndex = Integer.parseInt(split[1]);
 
+        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        
+        GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
+
+        try{
+            List<Transaction> transactions = stub.getBlockchainState(request).getTransactionsList();
+            
+            displayOperationResult(commandNumber, "OK", false);
+            
+            for(Transaction tx : transactions) {
+                System.out.println(tx);
+            }
+
+            // TODO print blockchain
+        } catch (StatusRuntimeException e) {
+            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+        }
+
         // TODO
-        System.out.println("TODO: getBlockchainState(" + nodeIndex + ")");
     }
 
     private void pause(String[] split) {

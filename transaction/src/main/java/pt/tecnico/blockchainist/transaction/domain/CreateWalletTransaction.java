@@ -1,6 +1,6 @@
 package pt.tecnico.blockchainist.transaction;
 
-public class CreateWalletTransaction extends Transaction {
+public class CreateWalletTransaction extends TransactionRecord {
 
     private String userId;
     private String walletId;

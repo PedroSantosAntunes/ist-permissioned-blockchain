@@ -1,5 +1,8 @@
 package pt.tecnico.blockchainist.node.grpc;
 
+import java.util.LinkedList;
+
+import pt.tecnico.blockchainist.transaction.*;
 import pt.tecnico.blockchainist.contract.*;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
@@ -10,6 +13,8 @@ import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.NOT_FOUND;
 import static io.grpc.Status.OK;
 import static io.grpc.Status.PERMISSION_DENIED;
+
+import java.util.LinkedList;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     private final NodeState state;
@@ -126,4 +131,62 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onCompleted();
         }
     }
+
+
+    @Override
+    public void getBlockchainState(GetBlockchainStateRequest request, StreamObserver<GetBlockchainStateResponse> responseObserver){
+        System.out.println("NodeServiceImpl: getBlockchainState");
+        
+        LinkedList<TransactionRecord> transactions = state.getBlockchainState(); // get blockchain
+
+        GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();
+
+        for (TransactionRecord tx : transactions) {
+             
+            if (tx instanceof CreateWalletTransaction) {
+                CreateWalletTransaction cwt = (CreateWalletTransaction) tx;
+                builder.addTransactions(
+                    Transaction.newBuilder()
+                        .setCreateWallet(
+                            CreateWalletRequest.newBuilder()
+                                .setUserId(cwt.getUserId())
+                                .setWalletId(cwt.getWalletId())
+                                .build()
+                        ).build()
+                );
+            } else if (tx instanceof DeleteWalletTransaction) {
+                DeleteWalletTransaction dwt = (DeleteWalletTransaction) tx;
+                builder.addTransactions(
+                    Transaction.newBuilder()
+                        .setDeleteWallet(
+                            DeleteWalletRequest.newBuilder()
+                                .setUserId(dwt.getUserId())
+                                .setWalletId(dwt.getWalletId())
+                                .build()
+                        ).build()
+                );
+            
+            } else if (tx instanceof TransferTransaction) {
+                TransferTransaction tt = (TransferTransaction) tx;
+                builder.addTransactions(
+                    Transaction.newBuilder()
+                        .setTransfer(
+                            TransferRequest.newBuilder()
+                                .setSrcUserId(tt.getScrWalletId())
+                                .setSrcWalletId(tt.getScrWalletId())
+                                .setDstWalletId(tt.getDstWalletId())
+                                .setValue(tt.getValue())
+                                .build()
+                        ).build()
+                );
+
+            }
+        }
+        GetBlockchainStateResponse response = builder.build();
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
+    }
+
+
 }
