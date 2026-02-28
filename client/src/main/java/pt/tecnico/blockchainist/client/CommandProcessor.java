@@ -120,10 +120,10 @@ public class CommandProcessor {
 
         CreateWalletRequest request = CreateWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            Status response = stub.createWallet(request).getStatus();
-            displayOperationResult(commandNumber, response);
+            stub.createWallet(request);
+            displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
-            System.err.println(commandNumber + " " + e.getStatus().getDescription());
+            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
     }
 
@@ -147,10 +147,10 @@ public class CommandProcessor {
 
         DeleteWalletRequest request = DeleteWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            Status response = stub.deleteWallet(request).getStatus();
-            displayOperationResult(commandNumber, response);
+            stub.deleteWallet(request);
+            displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
-            System.err.println(commandNumber + " " + e.getStatus().getDescription());
+            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
     }
 
@@ -173,11 +173,11 @@ public class CommandProcessor {
 
         ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
         try{
-            ReadBalanceResponse response = stub.readBalance(request);
-            displayOperationResult(commandNumber, response.getStatus());
-            System.out.println(response.getBalance());
+            long balance = stub.readBalance(request).getBalance();
+            displayOperationResult(commandNumber, "OK", false);
+            System.out.println(balance);
         } catch (StatusRuntimeException e) {
-            System.err.println(commandNumber + " " + e.getStatus().getDescription());
+            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
     }
 
@@ -208,10 +208,10 @@ public class CommandProcessor {
                                     .setValue(amount)
                                     .build();
         try{
-            TransferResponse response = stub.transfer(request);
-            displayOperationResult(commandNumber, response.getStatus());
+            stub.transfer(request);
+            displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
-            System.err.println(commandNumber + " " + e.getStatus().getDescription());
+            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
     }
 
@@ -397,7 +397,17 @@ public class CommandProcessor {
                 "- X\n");
     }
 
-    private static void displayOperationResult(Long commandNumber, Status statusMessage) {
-        System.out.println(commandNumber + " " + statusMessage);
+    /**
+     * Display function for standard out or err out
+     * @param commandNumber
+     * @param statusMessage
+     * @param err true if the content is to be displayed on err out
+     */
+    private static void displayOperationResult(Long commandNumber, String statusMessage, boolean err) {
+        if(err){
+            System.err.println(commandNumber + " " + statusMessage);
+        } else {
+            System.out.println(commandNumber + " " + statusMessage);
+        }
     }
 }

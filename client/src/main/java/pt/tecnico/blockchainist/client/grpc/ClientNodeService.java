@@ -6,6 +6,7 @@ import pt.tecnico.blockchainist.contract.*;
 
 public class ClientNodeService {
 
+	final ManagedChannel channel;
 	private NodeServiceGrpc.NodeServiceBlockingStub stub;
 	private String organization;
 
@@ -19,12 +20,13 @@ public class ClientNodeService {
 
 		// Channel is the abstraction to connect to a service endpoint.
 		// Let us use plaintext communication because we do not have certificates.
-		final ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+		this.channel  = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
 
 
 		this.stub = NodeServiceGrpc.newBlockingStub(channel);
 		this.organization = organization;
+		
 
     }
 
@@ -37,5 +39,9 @@ public class ClientNodeService {
 		return this.stub;
 	}
 
+
+	public void closeChannel(){
+		channel.shutdownNow();
+	}
 
 }

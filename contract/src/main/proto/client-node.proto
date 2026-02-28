@@ -10,11 +10,9 @@ import "common.proto";
 option java_multiple_files = true;
 
 message CreateWalletResponse {
-  Status status = 1;
 }
 
 message DeleteWalletResponse {
-  Status status = 1;
 }
 
 message ReadBalanceRequest {
@@ -22,12 +20,10 @@ message ReadBalanceRequest {
 }
 
 message ReadBalanceResponse {
-  Status status = 1;
   uint64 balance = 2;
 }
 
 message TransferResponse {
-  Status status = 1;
 }
 
 message GetBlockchainStateRequest {}

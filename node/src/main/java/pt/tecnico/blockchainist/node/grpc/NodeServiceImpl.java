@@ -18,6 +18,9 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         this.state = state;
     }
 
+
+    // TODO change if else's to switch case
+
     @Override
     public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
 
@@ -39,7 +42,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated Wallet: wallet already exists").asRuntimeException());
         } 
         else {
-            CreateWalletResponse response = CreateWalletResponse.newBuilder().build();
+            CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
@@ -72,7 +75,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belongs to user").asRuntimeException());
         }
         else {
-            DeleteWalletResponse response = DeleteWalletResponse.newBuilder().build();
+            DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
@@ -89,7 +92,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
         }
         else {
-            ReadBalanceResponse response = ReadBalanceResponse.newBuilder().setBalance(balance).setStatus(Status.OK).build();
+            ReadBalanceResponse response = ReadBalanceResponse.newBuilder().setBalance(balance).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
@@ -118,7 +121,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
         }
         else {        
-            TransferResponse response = TransferResponse.newBuilder().build();
+            TransferResponse response = TransferResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
