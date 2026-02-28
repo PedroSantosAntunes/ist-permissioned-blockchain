@@ -13,7 +13,9 @@ message CreateWalletResponse {
   Status status = 1;
 }
 
-message DeleteWalletResponse {}
+message DeleteWalletResponse {
+  Status status = 1;
+}
 
 message ReadBalanceRequest {
   string walletId = 1;

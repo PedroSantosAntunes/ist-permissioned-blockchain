@@ -56,9 +56,40 @@ public class NodeState {
         return Status.OK;
     }
 
-    public void deleteWallet(String userId, String walletId) {
-        // TODO
-        System.out.println("NodeState: deleteWallet called!\n" + userId + "\n" + walletId); 
+    public synchronized Status deleteWallet(String userId, String walletId) {
+        
+        System.out.println("NodeState: deleteWallet called!\n\t" + userId + "\n\t" + walletId); 
+        
+        if (userId == null || !checkFormat(userId)) {
+            System.err.println("Bad user id: " + userId);
+            return Status.BAD_USER_ERR;
+        }
+        if (walletId == null || !checkFormat(walletId)) {
+            System.err.println("Bad wallet id: " + walletId);
+            return Status.BAD_WALLET_ERR;
+        }
+        if (!checkWalletUniqueness(walletId)) {
+            System.err.println("Wallet id does not exist: " + walletId);
+            return Status.UNIQUE_WALLET_ERR; 
+        }
+        if (!checkUserUniqueness(userId)) {
+            System.err.println("User id does not exist: " + userId);
+            return Status.UNIQUE_USER_ERR; 
+        }
+        if (balances.get(walletId) != 0) {
+            System.err.println("Wallet id with balance other than 0: " + balances.get(walletId));
+            return Status.BALANCE_ERR;
+        } 
+        if (!checkAuthorization(walletId, userId)) {
+            System.err.println("Wallet id " + walletId + "does not belong to user " + userId);
+            return Status.AUTHORIZATION_ERR;
+        }
+        
+        wallets.remove(walletId);
+        balances.remove(walletId);
+        
+        System.err.println("\tSuccessfully Removed!");
+        return Status.OK;
     }
 
     public void transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
@@ -85,6 +116,11 @@ public class NodeState {
 
     private boolean checkWalletUniqueness(String walletId) {
         return wallets.containsKey(walletId);
+    }
+
+    // Checks if the wallet belongs to the user
+    private boolean checkAuthorization(String walletId, String userId) {
+        return wallets.get(walletId).equals(userId);
     }
     // TODO Add other operations (e.g., getBlockchainState)
 }

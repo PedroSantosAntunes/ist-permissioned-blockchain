@@ -5,7 +5,10 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 
 import static io.grpc.Status.ALREADY_EXISTS;
+import static io.grpc.Status.FAILED_PRECONDITION;
 import static io.grpc.Status.INVALID_ARGUMENT;
+import static io.grpc.Status.NOT_FOUND;
+import static io.grpc.Status.PERMISSION_DENIED;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     private final NodeState state;
@@ -48,11 +51,30 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        state.deleteWallet(userId, walletId);
-
-        DeleteWalletResponse response = DeleteWalletResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        Status result = state.deleteWallet(userId, walletId);
+        if (result == result.BAD_USER_ERR) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid User Format: use only numbers and letter without spaces").asRuntimeException());
+        } 
+        else if (result == result.BAD_WALLET_ERR) {
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letter without spaces").asRuntimeException());
+        }
+        else if (result == result.UNIQUE_USER_ERR) {
+            responseObserver.onError(NOT_FOUND.withDescription("Not Found User: user does not exist").asRuntimeException());
+        }
+        else if (result == result.UNIQUE_WALLET_ERR) {
+            responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
+        } 
+        else if (result == result.BALANCE_ERR) {
+            responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance needs to be zero").asRuntimeException());
+        }
+        else if (result == result.AUTHORIZATION_ERR) {
+            responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belongs to user").asRuntimeException());
+        }
+        else {
+            DeleteWalletResponse response = DeleteWalletResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 
     @Override
