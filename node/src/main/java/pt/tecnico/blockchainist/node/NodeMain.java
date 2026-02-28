@@ -81,9 +81,9 @@ public class NodeMain {
 		    System.out.println("NodeMain: Server started");
             server.awaitTermination();
         } catch (IOException e) {
-
+            // TODO
         } catch (InterruptedException e) {
-
+            // TODO
         }
         
     }

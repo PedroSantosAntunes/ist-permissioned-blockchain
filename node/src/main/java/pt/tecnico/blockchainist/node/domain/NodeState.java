@@ -21,7 +21,7 @@ public class NodeState {
 
     // TODO Mudar para sequencer depois
     public static final String BC_WALLET = "bc";
-    public static final String BC_NAME = "central bank";
+    public static final String BC_NAME = "BC";
     public static final long BC_INIT_BALANCE = 1000L;
 
     public NodeState() {
@@ -94,16 +94,47 @@ public class NodeState {
         return Status.OK;
     }
 
-    public void transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
-        // TODO
+    public synchronized Status transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+ 
+        System.out.println("NodeState: tranfer called!\n\t" + srcUserId + "\n\tsrc: " + srcWalletId + "\n\tdst: " + dstWalletId + "\n\tamount: " + amount); 
+
+        if (!checkWalletUniqueness(srcWalletId)){ 
+            System.err.println("Wallet id does not exist: " + srcWalletId);
+            return Status.UNIQUE_WALLET_ERR; 
+        }
+        if (!checkWalletUniqueness(dstWalletId)){ 
+            System.err.println("Wallet id does not exist: " + dstWalletId);
+            return Status.UNIQUE_WALLET_ERR; 
+        }
+        if (!checkAuthorization(srcWalletId, srcUserId)) {
+            System.err.println("Wallet id " + srcWalletId + "does not belong to user " + srcUserId);
+            return Status.AUTHORIZATION_ERR;
+        }
+
+        long srcBalance = balances.get(srcWalletId);
+        if (!checkEnoughBalance(srcBalance, amount)) {
+            System.err.println("Wallet id " + srcWalletId + "has not enough money (" + srcBalance + ") to transfer " + amount);
+            return Status.BALANCE_ERR;
+        }
+        if (amount <= 0) {
+            System.err.println(amount + "should be positive");
+            return Status.BAD_AMOUNT;
+        } 
+
+        long dstBalance = balances.get(dstWalletId);
+        balances.replace(srcWalletId, srcBalance - amount);
+        balances.replace(dstWalletId, dstBalance + amount);
+
+        System.err.println("\tSuccessfully Transferred!");
+        return Status.OK;
     }
 
     // Sync not needed
     public long readBalance(String walletId) {
-        
         System.out.println("NodeState: readBalance called!\n\t" + walletId); 
-        
-        return balances.getOrDefault(walletId, -1L);  
+        long balance = balances.getOrDefault(walletId, -1L);
+        System.out.println("\t" + balance);
+        return balance;  
     }
 
     // TODO: Ask teacher: this checks are also important in the server side
@@ -126,6 +157,10 @@ public class NodeState {
     // Checks if the wallet belongs to the user
     private boolean checkAuthorization(String walletId, String userId) {
         return wallets.get(walletId).equals(userId);
+    }
+
+    private boolean checkEnoughBalance (long balanceSrc, long amount){
+        return balanceSrc - amount > 0; 
     }
     // TODO Add other operations (e.g., getBlockchainState)
 }

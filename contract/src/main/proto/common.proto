@@ -16,6 +16,7 @@ enum Status {
   UNIQUE_WALLET_ERR = 4;
   BALANCE_ERR = 5;
   AUTHORIZATION_ERR = 6;
+  BAD_AMOUNT = 7;
 }
 
 message CreateWalletRequest {

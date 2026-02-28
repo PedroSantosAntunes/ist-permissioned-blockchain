@@ -80,8 +80,8 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void readBalance(ReadBalanceRequest request, StreamObserver<ReadBalanceResponse> responseObserver) {
+        
         System.out.println("NodeServiceImpl: readBalance");
-
         String walletId = request.getWalletId();
 
         long balance = state.readBalance(walletId);
@@ -97,17 +97,30 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
-        System.out.println("NodeServiceImpl: transfer");
 
+        System.out.println("NodeServiceImpl: transfer");
         String srcUserId = request.getSrcUserId();
         String srcWalletId = request.getSrcWalletId();
         String dstWalletId = request.getDstWalletId();
         Long amount = request.getValue();
 
-        state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
-
-        TransferResponse response = TransferResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
+        Status result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
+        if (result == Status.UNIQUE_WALLET_ERR) {
+            responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
+        } 
+        else if (result == Status.AUTHORIZATION_ERR) {
+            responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belongs to user").asRuntimeException());
+        }
+        else if (result == Status.BALANCE_ERR) {
+            responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance is not enough").asRuntimeException());
+        }
+        else if (result == Status.BAD_AMOUNT) {
+            responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
+        }
+        else {        
+            TransferResponse response = TransferResponse.newBuilder().build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 }

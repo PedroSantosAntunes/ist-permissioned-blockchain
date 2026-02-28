@@ -170,6 +170,7 @@ public class CommandProcessor {
         NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
         
         // System.out.println("Le Saldo: leSaldo(walletId)");
+
         ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
         try{
             ReadBalanceResponse response = stub.readBalance(request);
@@ -196,10 +197,9 @@ public class CommandProcessor {
         Long amount = Long.parseLong(split[4]);
         Integer nodeIndex = Integer.parseInt(split[5]);
         Integer nodeDelay = Integer.parseInt(split[6]);
-
-
         NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
         
+        // System.out.println("Le Saldo: leSaldo(walletId)");
 
         TransferRequest request =  TransferRequest.newBuilder()
                                     .setSrcUserId(sourceUserId)
@@ -207,15 +207,12 @@ public class CommandProcessor {
                                     .setDstWalletId(destinationWalletId)
                                     .setValue(amount)
                                     .build();
-
         try{
             TransferResponse response = stub.transfer(request);
+            displayOperationResult(commandNumber, response.getStatus());
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " +
-                    e.getStatus().getDescription()); // The same exception description provided in the server side
+            System.err.println(commandNumber + " " + e.getStatus().getDescription());
         }
-
-        // TODO
     }
 
     /**
