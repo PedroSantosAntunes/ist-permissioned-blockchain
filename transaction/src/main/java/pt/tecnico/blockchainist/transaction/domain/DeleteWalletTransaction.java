@@ -1,5 +1,4 @@
-
-
+package pt.tecnico.blockchainist.transaction;
 
 public class DeleteWalletTransaction extends Transaction {
 
@@ -20,4 +19,9 @@ public class DeleteWalletTransaction extends Transaction {
     public String getWalletId(){
         return this.walletId;
     }
+    
+    public String toString() {
+        return "user: " + this.userId + " wallet: " + this.walletId;
+    }
+    
 }

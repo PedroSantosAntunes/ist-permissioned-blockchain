@@ -1,5 +1,6 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -8,6 +9,7 @@ import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
 import pt.tecnico.blockchainist.contract.Status;
+import pt.tecnico.blockchainist.transaction.*;
 
 public class NodeState {
     
@@ -16,10 +18,12 @@ public class NodeState {
     // - The balance of each wallet
     // - The transaction ledger (up to A.2, a chain of individual transactions; after B.1, a chain of blocks)
 
+    private final LinkedList<Transaction> transactions = new LinkedList<Transaction>();
+    int local_transaction_counter = 0;
+
     private final Map<String, String> wallets = new ConcurrentHashMap<>();
     private final Map<String, Long> balances = new ConcurrentHashMap<>();
 
-    // TODO Mudar para sequencer depois
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
     public static final long BC_INIT_BALANCE = 1000L;
@@ -49,12 +53,19 @@ public class NodeState {
             System.err.println("Wallet id already exists: " + walletId);
             return Status.UNIQUE_WALLET_ERR;
         }
+        // Transaction
+        // TODO A.2
+        Transaction transaction = new CreateWalletTransaction(local_transaction_counter, userId, walletId);
+        transactions.addFirst(transaction);
+        local_transaction_counter++;
 
+        // Execute
         wallets.put(walletId, userId);
         balances.put(walletId, 0L);
 
         System.err.println("\twallets = " + wallets);
         System.err.println("\tbalances = " + balances);
+        System.err.println("\ttransaction = " + transaction);
         return Status.OK;
     }
 
@@ -87,9 +98,17 @@ public class NodeState {
             return Status.AUTHORIZATION_ERR;
         }
         
+        // Transaction
+        // TODO A.2
+        Transaction transaction = new DeleteWalletTransaction(local_transaction_counter, userId, walletId);
+        transactions.addFirst(transaction);
+        local_transaction_counter++;
+
+        // Execute
         wallets.remove(walletId);
         balances.remove(walletId);
         
+        System.err.println("\ttransaction = " + transaction);
         System.err.println("\tSuccessfully Removed!");
         return Status.OK;
     }
@@ -121,10 +140,18 @@ public class NodeState {
             return Status.BAD_AMOUNT;
         } 
 
+        // Transaction
+        // TODO A.2
+        Transaction transaction = new TransferTransaction(local_transaction_counter, srcUserId, srcWalletId, dstWalletId, amount);
+        transactions.addFirst(transaction);
+        local_transaction_counter++;
+
+        // EXECUTE
         long dstBalance = balances.get(dstWalletId);
         balances.replace(srcWalletId, srcBalance - amount);
         balances.replace(dstWalletId, dstBalance + amount);
 
+        System.err.println("\ntransaction = " + transaction);
         System.err.println("\tSuccessfully Transferred!");
         return Status.OK;
     }

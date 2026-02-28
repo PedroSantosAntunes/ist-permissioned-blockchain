@@ -1,4 +1,4 @@
-
+package pt.tecnico.blockchainist.transaction;
 
 public abstract class Transaction {
     int sequence_number;

@@ -1,4 +1,4 @@
-
+package pt.tecnico.blockchainist.transaction;
 
 public class CreateWalletTransaction extends Transaction {
 
@@ -20,5 +20,8 @@ public class CreateWalletTransaction extends Transaction {
         return this.walletId;
     }
 
+    public String toString() {
+        return "user: " + this.userId + " wallet: " + this.walletId;
+    }
 }
 

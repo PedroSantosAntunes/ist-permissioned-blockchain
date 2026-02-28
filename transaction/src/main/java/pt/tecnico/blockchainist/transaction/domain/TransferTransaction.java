@@ -1,4 +1,4 @@
-
+package pt.tecnico.blockchainist.transaction;
 
 public class TransferTransaction extends Transaction {
 
@@ -29,6 +29,10 @@ public class TransferTransaction extends Transaction {
 
     public long getValue(){
         return this.value;
+    }
+
+    public String toString() {
+        return "srcUser: " + this.srcUserId + " srcWallet: " + this.srcWalletId + " dtsWallet: " + this.dstWalletId + " value: " + this.value;
     }
 
 }
