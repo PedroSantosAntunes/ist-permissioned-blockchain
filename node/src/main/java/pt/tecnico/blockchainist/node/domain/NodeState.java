@@ -5,6 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 // Checks
 import java.util.regex.Pattern;
+
+import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
 import pt.tecnico.blockchainist.contract.Status;
 
 public class NodeState {
@@ -96,9 +98,12 @@ public class NodeState {
         // TODO
     }
 
+    // Sync not needed
     public long readBalance(String walletId) {
-        // TODO
-        return -1L;
+        
+        System.out.println("NodeState: readBalance called!\n\t" + walletId); 
+        
+        return balances.getOrDefault(walletId, -1L);  
     }
 
     // TODO: Ask teacher: this checks are also important in the server side

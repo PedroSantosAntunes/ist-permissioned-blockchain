@@ -22,7 +22,8 @@ message ReadBalanceRequest {
 }
 
 message ReadBalanceResponse {
-  uint64 balance = 1;
+  Status status = 1;
+  uint64 balance = 2;
 }
 
 message TransferResponse {}

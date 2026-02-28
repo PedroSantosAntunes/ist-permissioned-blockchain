@@ -8,6 +8,7 @@ import static io.grpc.Status.ALREADY_EXISTS;
 import static io.grpc.Status.FAILED_PRECONDITION;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.NOT_FOUND;
+import static io.grpc.Status.OK;
 import static io.grpc.Status.PERMISSION_DENIED;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
@@ -83,12 +84,15 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
         String walletId = request.getWalletId();
 
-        state.readBalance(walletId);
-
-        ReadBalanceResponse response = ReadBalanceResponse.newBuilder().build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
-
+        long balance = state.readBalance(walletId);
+        if (balance == -1L) {
+            responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
+        }
+        else {
+            ReadBalanceResponse response = ReadBalanceResponse.newBuilder().setBalance(balance).setStatus(Status.OK).build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }
     }
 
     @Override

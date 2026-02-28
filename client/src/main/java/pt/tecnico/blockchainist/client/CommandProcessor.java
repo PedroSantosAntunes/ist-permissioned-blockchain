@@ -123,7 +123,7 @@ public class CommandProcessor {
             Status response = stub.createWallet(request).getStatus();
             displayOperationResult(commandNumber, response);
         } catch (StatusRuntimeException e) {
-            System.err.println(commandCounter + " " + e.getStatus().getDescription());
+            System.err.println(commandNumber + " " + e.getStatus().getDescription());
         }
     }
 
@@ -150,7 +150,7 @@ public class CommandProcessor {
             Status response = stub.deleteWallet(request).getStatus();
             displayOperationResult(commandNumber, response);
         } catch (StatusRuntimeException e) {
-            System.out.println(commandCounter + " " + e.getStatus().getDescription());
+            System.err.println(commandNumber + " " + e.getStatus().getDescription());
         }
     }
 
@@ -167,18 +167,16 @@ public class CommandProcessor {
         String walletId = split[1];
         Integer nodeIndex = Integer.parseInt(split[2]);
         Integer nodeDelay = Integer.parseInt(split[3]);
-
         NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
         
-
+        // System.out.println("Le Saldo: leSaldo(walletId)");
         ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
-        
         try{
-            long balance = stub.readBalance(request).getBalance();
-            System.out.println(balance);
-
+            ReadBalanceResponse response = stub.readBalance(request);
+            displayOperationResult(commandNumber, response.getStatus());
+            System.out.println(response.getBalance());
         } catch (StatusRuntimeException e) {
-            System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+            System.err.println(commandNumber + " " + e.getStatus().getDescription());
         }
     }
 
