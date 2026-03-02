@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
-import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.contract.Transaction;
 
 public class CommandProcessor {
 
@@ -119,9 +119,8 @@ public class CommandProcessor {
 
         // System.err.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
 
-        CreateWalletRequest request = CreateWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            node.createWallet(request);
+            node.createWallet(userId, walletId);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -146,9 +145,8 @@ public class CommandProcessor {
 
         // System.out.println("Delete Wallet: deleteWallet(" + userId + ", " + walletId + ")");
 
-        DeleteWalletRequest request = DeleteWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            node.deleteWallet(request);
+            node.deleteWallet(userId, walletId);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -172,9 +170,8 @@ public class CommandProcessor {
         
         // System.out.println("Le Saldo: leSaldo(walletId)");
 
-        ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
         try{
-            long balance = node.readBalance(request).getBalance();
+            long balance = node.readBalance(walletId);
             displayOperationResult(commandNumber, "OK", false);
             System.out.println(balance);
         } catch (StatusRuntimeException e) {
@@ -201,15 +198,8 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
         
         // System.out.println("Le Saldo: leSaldo(walletId)");
-
-        TransferRequest request =  TransferRequest.newBuilder()
-                                    .setSrcUserId(sourceUserId)
-                                    .setSrcWalletId(sourceWalletId)
-                                    .setDstWalletId(destinationWalletId)
-                                    .setValue(amount)
-                                    .build();
         try{
-            node.transfer(request);
+            node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -229,10 +219,8 @@ public class CommandProcessor {
 
         ClientNodeService node = nodes.get(nodeIndex);
         
-        GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
-
         try{
-            List<Transaction> transactions = node.getBlockchainState(request).getTransactionsList();
+            List<Transaction> transactions = node.getBlockchainState();
             
             displayOperationResult(commandNumber, "OK", false);
             

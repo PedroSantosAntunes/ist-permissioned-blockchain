@@ -6,6 +6,6 @@ public class Debug {
     public static final boolean ENABLED = "1".equals(System.getProperty("debug", "0"));
 
     public static void log (String msg) {
-        if (ENABLED) System.out.println(msg);
+        if (ENABLED) System.err.println(msg);
     }
 }

@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.contract.*;
+import java.util.List;
 
 public class ClientNodeService {
 
@@ -15,57 +16,60 @@ public class ClientNodeService {
 	public ClientNodeService(String host, int port, String organization) {
         // TODO: create channel/stub
 
-
-
         final String target = host + ":" + port;
 
 		// Channel is the abstraction to connect to a service endpoint.
 		// Let us use plaintext communication because we do not have certificates.
 		this.channel  = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
-
-
 		this.stub = NodeServiceGrpc.newBlockingStub(channel);
 		this.organization = organization;
-		
-
     }
 
-
-
-	public CreateWalletResponse createWallet(CreateWalletRequest request){
-		return stub.createWallet(request);
+	public void createWallet(String userId, String walletId){
+		CreateWalletRequest request = CreateWalletRequest.newBuilder()
+			.setUserId(userId)
+			.setWalletId(walletId)
+			.build();
+		stub.createWallet(request);
 	}
 
-	public DeleteWalletResponse deleteWallet(DeleteWalletRequest request){
-		return stub.deleteWallet(request);
+	public void deleteWallet(String userId, String walletId){
+		DeleteWalletRequest request = DeleteWalletRequest.newBuilder()
+			.setUserId(userId)
+			.setWalletId(walletId)
+			.build();
+		stub.deleteWallet(request);
 	}
 
-	public ReadBalanceResponse readBalance(ReadBalanceRequest request){
-		return stub.readBalance(request);
+	public long readBalance(String walletId){
+		ReadBalanceRequest request = ReadBalanceRequest.newBuilder()
+			.setWalletId(walletId)
+			.build();
+		ReadBalanceResponse response = stub.readBalance(request);
+		return response.getBalance();
 	}
 
-	public TransferResponse transfer(TransferRequest request){
-		return stub.transfer(request);
+	public void transfer(String srcUserId, String srcWalletId, String dstWalletId, long value){
+		TransferRequest request = TransferRequest.newBuilder()
+			.setSrcUserId(srcUserId)
+			.setSrcWalletId(srcWalletId)
+			.setDstWalletId(dstWalletId)
+			.setValue(value)
+			.build();
+		stub.transfer(request);
 	}
 
-	public GetBlockchainStateResponse getBlockchainState(GetBlockchainStateRequest request){
-		return stub.getBlockchainState(request);
+	public List<Transaction> getBlockchainState(){
+		GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
+		GetBlockchainStateResponse response = stub.getBlockchainState(request);
+		//TODO: isto vai devolver uma lista de transaction. Mudar para Transaction de outro tipo?
+		return response.getTransactionsList();
 	}
-
-
-
-
 
 	public String getOrganization(){
 		return this.organization;
 	}
-
-
-	public NodeServiceGrpc.NodeServiceBlockingStub getStub(){
-		return this.stub;
-	}
-
 
 	public void closeChannel(){
 		channel.shutdownNow();
