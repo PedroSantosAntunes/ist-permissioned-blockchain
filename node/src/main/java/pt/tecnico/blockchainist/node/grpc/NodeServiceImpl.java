@@ -1,6 +1,5 @@
 package pt.tecnico.blockchainist.node.grpc;
 
-import java.util.LinkedList;
 
 import pt.tecnico.blockchainist.transaction.domain.*;
 import pt.tecnico.blockchainist.contract.*;
@@ -12,6 +11,8 @@ import static io.grpc.Status.FAILED_PRECONDITION;
 import static io.grpc.Status.INVALID_ARGUMENT;
 import static io.grpc.Status.NOT_FOUND;
 import static io.grpc.Status.PERMISSION_DENIED;
+
+import java.util.ArrayList;
 
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
@@ -158,7 +159,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     public void getBlockchainState(GetBlockchainStateRequest request, StreamObserver<GetBlockchainStateResponse> responseObserver){
         System.out.println("NodeServiceImpl: getBlockchainState");
         
-        LinkedList<TransactionRecord> transactions = state.getBlockchainState(); // get blockchain
+        ArrayList<TransactionRecord> transactions = state.getBlockchainState(); // get blockchain
 
         GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();
 

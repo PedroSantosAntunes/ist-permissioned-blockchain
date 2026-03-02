@@ -1,6 +1,6 @@
 package pt.tecnico.blockchainist.sequencer.domain;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 
 import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.transaction.domain.*;
@@ -10,7 +10,7 @@ public class SequencerState {
 
     int global_transaction_counter = 0;
 
-    private final LinkedList<TransactionRecord> transactions = new LinkedList<TransactionRecord>();
+    private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
 
 
     public SequencerState(){

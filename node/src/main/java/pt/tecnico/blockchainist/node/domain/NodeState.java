@@ -1,6 +1,6 @@
 package pt.tecnico.blockchainist.node.domain;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,7 +26,7 @@ public class NodeState {
     // - The balance of each wallet
     // - The transaction ledger (up to A.2, a chain of individual transactions; after B.1, a chain of blocks)
 
-    private final LinkedList<TransactionRecord> transactions = new LinkedList<TransactionRecord>();
+    private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
     int local_transaction_counter = 0;
 
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
@@ -205,7 +205,7 @@ public class NodeState {
     }
 
     // todo change return type to list of transactions
-    public LinkedList<TransactionRecord> getBlockchainState(){    
+    public ArrayList<TransactionRecord> getBlockchainState(){    
         return transactions;
     }
 
