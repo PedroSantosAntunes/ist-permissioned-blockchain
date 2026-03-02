@@ -17,7 +17,7 @@ import pt.tecnico.blockchainist.contract.Status;
 import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.contract.TransferRequest;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
-import pt.tecnico.blockchainist.transaction.*;
+import pt.tecnico.blockchainist.transaction.domain.*;
 
 public class NodeState {
     
@@ -218,7 +218,9 @@ public class NodeState {
 
             TransactionRecord txRecord = TransactionRecord.transactionToRecord(transaction, next_transaction);
 
-            txRecord.execute(wallets, balances);
+            ExecutionVisitor executor = new ExecutionVisitor(wallets, balances);            
+            txRecord.accept(executor);
+            
             transactions.add(txRecord);
             local_transaction_counter++;
 

@@ -2,7 +2,7 @@ package pt.tecnico.blockchainist.node.grpc;
 
 import java.util.LinkedList;
 
-import pt.tecnico.blockchainist.transaction.*;
+import pt.tecnico.blockchainist.transaction.domain.*;
 import pt.tecnico.blockchainist.contract.*;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;

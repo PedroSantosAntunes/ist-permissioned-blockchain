@@ -1,4 +1,4 @@
-package pt.tecnico.blockchainist.transaction;
+package pt.tecnico.blockchainist.transaction.domain;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -44,8 +44,8 @@ public class DeleteWalletTransaction extends TransactionRecord {
         return transaction;
     }
     
-    public void execute(Map<String, String> wallets, Map<String, Long> balances){
-        wallets.remove(this.walletId);
-        balances.remove(this.walletId);
+    @Override
+    public void accept(TransactionVisitor visitor) {
+        visitor.execute(this);
     }
 }

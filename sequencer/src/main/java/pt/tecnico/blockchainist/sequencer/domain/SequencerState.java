@@ -3,7 +3,7 @@ package pt.tecnico.blockchainist.sequencer.domain;
 import java.util.LinkedList;
 
 import pt.tecnico.blockchainist.contract.Transaction;
-import pt.tecnico.blockchainist.transaction.*;
+import pt.tecnico.blockchainist.transaction.domain.*;
 
 public class SequencerState {
 

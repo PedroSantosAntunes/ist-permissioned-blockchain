@@ -1,8 +1,4 @@
-package pt.tecnico.blockchainist.transaction;
-
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+package pt.tecnico.blockchainist.transaction.domain;
 
 
 import pt.tecnico.blockchainist.contract.*;
@@ -47,6 +43,5 @@ public abstract class TransactionRecord {
     }
 
     public abstract Transaction recordToTransaction();
-    public abstract void execute(Map<String, String> wallets, Map<String, Long> balances);
-
+    public abstract void accept(TransactionVisitor visitor);
 }

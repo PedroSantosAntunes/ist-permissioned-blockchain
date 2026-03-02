@@ -1,4 +1,4 @@
-package pt.tecnico.blockchainist.transaction;
+package pt.tecnico.blockchainist.transaction.domain;
 
 import java.util.LinkedList;
 import java.util.Map;
@@ -45,9 +45,9 @@ public class CreateWalletTransaction extends TransactionRecord {
         return transaction;
     }
 
-    public void execute(Map<String, String> wallets, Map<String, Long> balances){
-        wallets.put(this.walletId, this.userId);
-        balances.put(this.walletId, 0L);
+    @Override
+    public void accept(TransactionVisitor visitor) {
+        visitor.execute(this);
     }
 }
 
