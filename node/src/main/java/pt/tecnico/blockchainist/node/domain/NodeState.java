@@ -29,8 +29,7 @@ public class NodeState {
     private final LinkedList<TransactionRecord> transactions = new LinkedList<TransactionRecord>();
     int local_transaction_counter = 0;
 
-    private final Map<String, String> wallets = new ConcurrentHashMap<>();
-    private final Map<String, Long> balances = new ConcurrentHashMap<>();
+    private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
 
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
@@ -39,8 +38,9 @@ public class NodeState {
     private final NodeSequencerService sequencer;
 
     public NodeState(NodeSequencerService sequencer) {
-        wallets.put(BC_WALLET, BC_NAME);
-        balances.put(BC_WALLET, BC_INIT_BALANCE);
+        Wallet wallet = new Wallet(BC_WALLET, BC_NAME, BC_INIT_BALANCE);
+
+        wallets.put(BC_WALLET, wallet);
     
         this.sequencer = sequencer;
     }
@@ -91,7 +91,6 @@ public class NodeState {
         pullTransactions(target_transaction);
 
         System.err.println("\twallets = " + wallets);
-        System.err.println("\tbalances = " + balances);
         System.err.println("\ttransaction = " + transaction);
         return Status.OK;
     }
@@ -116,8 +115,10 @@ public class NodeState {
             System.err.println("User id does not exist: " + userId);
             return Status.UNIQUE_USER_ERR; 
         }
-        if (balances.get(walletId) != 0) {
-            System.err.println("Wallet id with balance other than 0: " + balances.get(walletId));
+
+        long balance = wallets.get(walletId).getBalance();
+        if (wallets.get(walletId).getBalance() != 0) {
+            System.err.println("Wallet id with balance other than 0: " + wallets.get(balance).getBalance()); // TODO dont repeat gets
             return Status.BALANCE_ERR;
         } 
         if (!checkAuthorization(walletId, userId)) {
@@ -160,7 +161,7 @@ public class NodeState {
             return Status.AUTHORIZATION_ERR;
         }
 
-        long srcBalance = balances.get(srcWalletId);
+        long srcBalance = wallets.get(srcWalletId).getBalance();
         if (!checkEnoughBalance(srcBalance, amount)) {
             System.err.println("Wallet id " + srcWalletId + "has not enough money (" + srcBalance + ") to transfer " + amount);
             return Status.BALANCE_ERR;
@@ -193,9 +194,14 @@ public class NodeState {
     // Sync not needed
     public long readBalance(String walletId) {
         System.out.println("NodeState: readBalance called!\n\t" + walletId); 
-        long balance = balances.getOrDefault(walletId, -1L);
-        System.out.println("\t" + balance);
-        return balance;  
+        Wallet wallet = wallets.getOrDefault(walletId, null);
+        
+        if (wallet == null){
+            return -1L;
+        }
+
+        System.out.println("\t" + wallet.getBalance());
+        return wallet.getBalance();  
     }
 
     // todo change return type to list of transactions
@@ -218,7 +224,7 @@ public class NodeState {
 
             TransactionRecord txRecord = TransactionRecord.transactionToRecord(transaction, next_transaction);
 
-            ExecutionVisitor executor = new ExecutionVisitor(wallets, balances);            
+            ExecutionVisitor executor = new ExecutionVisitor(wallets);            
             txRecord.accept(executor);
             
             transactions.add(txRecord);
@@ -239,7 +245,12 @@ public class NodeState {
     }
 
     private boolean checkUserUniqueness(String userId) {
-        return wallets.containsValue(userId);
+        for (Wallet wallet : wallets.values()) {
+            if (wallet.getUserId().equals(userId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean checkWalletUniqueness(String walletId) {
@@ -248,7 +259,7 @@ public class NodeState {
 
     // Checks if the wallet belongs to the user
     private boolean checkAuthorization(String walletId, String userId) {
-        return wallets.get(walletId).equals(userId);
+        return wallets.get(walletId).getUserId().equals(userId);
     }
 
     private boolean checkEnoughBalance (long balanceSrc, long amount){

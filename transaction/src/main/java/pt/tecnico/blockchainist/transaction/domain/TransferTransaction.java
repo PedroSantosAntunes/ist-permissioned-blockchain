@@ -1,12 +1,8 @@
 package pt.tecnico.blockchainist.transaction.domain;
 
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 
 import pt.tecnico.blockchainist.contract.*;
-
 
 public class TransferTransaction extends TransactionRecord {
 
