@@ -7,9 +7,16 @@ import java.util.concurrent.ConcurrentHashMap;
 // Checks
 import java.util.regex.Pattern;
 
+import pt.tecnico.blockchainist.contract.BroadcastRequest;
+import pt.tecnico.blockchainist.contract.BroadcastResponse;
+import pt.tecnico.blockchainist.contract.CreateWalletRequest;
+import pt.tecnico.blockchainist.contract.DeleteWalletRequest;
+import pt.tecnico.blockchainist.contract.DeliverTransactionRequest;
 import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
 import pt.tecnico.blockchainist.contract.Status;
 import pt.tecnico.blockchainist.contract.Transaction;
+import pt.tecnico.blockchainist.contract.TransferRequest;
+import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.transaction.*;
 
 public class NodeState {
@@ -29,15 +36,23 @@ public class NodeState {
     public static final String BC_NAME = "BC";
     public static final long BC_INIT_BALANCE = 1000L;
 
-    public NodeState() {
+    private final NodeSequencerService sequencer;
+
+    public NodeState(NodeSequencerService sequencer) {
         wallets.put(BC_WALLET, BC_NAME);
         balances.put(BC_WALLET, BC_INIT_BALANCE);
+    
+        this.sequencer = sequencer;
     }
 
     public synchronized Status createWallet(String userId, String walletId) {
 
         System.err.println("NodeState: createWallet called!\n\t" + userId + "\n\t" + walletId);
 
+
+
+
+        // Check request integrity
         if (userId == null || !checkFormat(userId)) {
             System.err.println("Bad user id: " + userId);
             return Status.BAD_USER_ERR;
@@ -54,15 +69,26 @@ public class NodeState {
             System.err.println("Wallet id already exists: " + walletId);
             return Status.UNIQUE_WALLET_ERR;
         }
-        // Transaction
-        // TODO A.2
-        TransactionRecord transaction = new CreateWalletTransaction(local_transaction_counter, userId, walletId);
-        transactions.add(transaction);
-        local_transaction_counter++;
 
-        // Execute
-        wallets.put(walletId, userId);
-        balances.put(walletId, 0L);
+
+        // Send to sequencer new BroadcastRequest
+
+        // Send DeliverTransactionRequest's to sequencer until the local transaction counter is equal 
+        // to the transaction number from the BroadcastResponse
+
+
+        Transaction transaction = Transaction.newBuilder()
+        .setCreateWallet(
+            CreateWalletRequest.newBuilder()
+            .setUserId(userId)
+            .setWalletId(walletId)
+            .build()
+        ).build();
+        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
+
+        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+
+        pullTransactions(target_transaction);
 
         System.err.println("\twallets = " + wallets);
         System.err.println("\tbalances = " + balances);
@@ -99,15 +125,18 @@ public class NodeState {
             return Status.AUTHORIZATION_ERR;
         }
         
-        // Transaction
-        // TODO A.2
-        TransactionRecord transaction = new DeleteWalletTransaction(local_transaction_counter, userId, walletId);
-        transactions.add(transaction);
-        local_transaction_counter++;
+        Transaction transaction = Transaction.newBuilder()
+                .setDeleteWallet(
+                    DeleteWalletRequest.newBuilder()
+                        .setUserId(userId)
+                        .setWalletId(walletId)
+                        .build()
+                ).build();
+        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-        // Execute
-        wallets.remove(walletId);
-        balances.remove(walletId);
+        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+
+        pullTransactions(target_transaction);
         
         System.err.println("\ttransaction = " + transaction);
         System.err.println("\tSuccessfully Removed!");
@@ -141,16 +170,20 @@ public class NodeState {
             return Status.BAD_AMOUNT;
         } 
 
-        // Transaction
-        // TODO A.2
-        TransactionRecord transaction = new TransferTransaction(local_transaction_counter, srcUserId, srcWalletId, dstWalletId, amount);
-        transactions.add(transaction);
-        local_transaction_counter++;
+        Transaction transaction = Transaction.newBuilder()
+                .setTransfer(
+                    TransferRequest.newBuilder()
+                        .setSrcUserId(srcUserId)
+                        .setSrcWalletId(srcWalletId)
+                        .setDstWalletId(dstWalletId)
+                        .setValue(amount)
+                        .build()
+                ).build();
+        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-        // EXECUTE
-        long dstBalance = balances.get(dstWalletId);
-        balances.replace(srcWalletId, srcBalance - amount);
-        balances.replace(dstWalletId, dstBalance + amount);
+        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+
+        pullTransactions(target_transaction);
 
         System.err.println("\ntransaction = " + transaction);
         System.err.println("\tSuccessfully Transferred!");
@@ -168,6 +201,28 @@ public class NodeState {
     // todo change return type to list of transactions
     public LinkedList<TransactionRecord> getBlockchainState(){    
         return transactions;
+    }
+
+
+
+
+    private void pullTransactions(int target_transaction){
+        // Send DeliverTransactionRequest's to sequencer until the local transaction counter is equal 
+        // to the transaction number from the BroadcastResponse
+        
+        while(local_transaction_counter < target_transaction){
+            int next_transaction = local_transaction_counter + 1;
+            DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
+
+            Transaction transaction = sequencer.deliverTransaction(request).getTransaction();
+
+            TransactionRecord txRecord = TransactionRecord.transactionToRecord(transaction, next_transaction);
+
+            txRecord.execute(wallets, balances);
+            transactions.add(txRecord);
+            local_transaction_counter++;
+
+        }
     }
 
 

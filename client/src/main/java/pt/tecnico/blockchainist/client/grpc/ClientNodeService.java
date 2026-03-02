@@ -2,6 +2,7 @@ package pt.tecnico.blockchainist.client.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.contract.*;
 
 public class ClientNodeService {
@@ -29,6 +30,32 @@ public class ClientNodeService {
 		
 
     }
+
+
+
+	public CreateWalletResponse createWallet(CreateWalletRequest request){
+		return stub.createWallet(request);
+	}
+
+	public DeleteWalletResponse deleteWallet(DeleteWalletRequest request){
+		return stub.deleteWallet(request);
+	}
+
+	public ReadBalanceResponse readBalance(ReadBalanceRequest request){
+		return stub.readBalance(request);
+	}
+
+	public TransferResponse transfer(TransferRequest request){
+		return stub.transfer(request);
+	}
+
+	public GetBlockchainStateResponse getBlockchainState(GetBlockchainStateRequest request){
+		return stub.getBlockchainState(request);
+	}
+
+
+
+
 
 	public String getOrganization(){
 		return this.organization;

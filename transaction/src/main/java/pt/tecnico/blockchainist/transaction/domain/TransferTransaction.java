@@ -1,5 +1,13 @@
 package pt.tecnico.blockchainist.transaction;
 
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+
+import pt.tecnico.blockchainist.contract.*;
+
+
 public class TransferTransaction extends TransactionRecord {
 
     private String srcUserId;
@@ -33,6 +41,27 @@ public class TransferTransaction extends TransactionRecord {
 
     public String toString() {
         return "srcUser: " + this.srcUserId + " srcWallet: " + this.srcWalletId + " dtsWallet: " + this.dstWalletId + " value: " + this.value;
+    }
+
+    @Override
+    public Transaction recordToTransaction(){
+        Transaction transaction = Transaction.newBuilder()
+                .setTransfer(
+                    TransferRequest.newBuilder()
+                        .setSrcUserId(this.srcUserId)
+                        .setSrcWalletId(this.srcWalletId)
+                        .setDstWalletId(this.dstWalletId)
+                        .setValue(this.value)
+                        .build()
+                ).build();
+        return transaction;
+    }
+
+    public void execute(Map<String, String> wallets, Map<String, Long> balances){
+        long srcBalance = balances.get(this.srcWalletId);
+        long dstBalance = balances.get(this.dstWalletId);
+        balances.replace(this.srcWalletId, srcBalance - this.value);
+        balances.replace(this.dstWalletId, dstBalance + this.value);
     }
 
 }

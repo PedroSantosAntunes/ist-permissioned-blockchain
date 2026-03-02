@@ -2,6 +2,9 @@ package pt.tecnico.blockchainist.sequencer;
 import java.io.IOException;
 
 import io.grpc.ServerBuilder;
+import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
+import pt.tecnico.blockchainist.sequencer.grpc.SequencerServiceImpl;
+import io.grpc.BindableService;
 import io.grpc.Server;
 
 public class SequencerMain {
@@ -25,7 +28,13 @@ public class SequencerMain {
             printUsage();
             return;
         } 
-        Server server = ServerBuilder.forPort(port).build(); // TODO: ADD SERVICE
+
+
+        SequencerState state = new SequencerState();
+
+        final BindableService impl = new SequencerServiceImpl(state);
+
+        Server server = ServerBuilder.forPort(port).addService(impl).build(); // TODO: ADD SERVICE
         server.start();
         System.out.println("Sequencer started");
         server.awaitTermination();

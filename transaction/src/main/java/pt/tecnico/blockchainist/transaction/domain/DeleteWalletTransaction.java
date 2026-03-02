@@ -1,5 +1,13 @@
 package pt.tecnico.blockchainist.transaction;
 
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+
+import pt.tecnico.blockchainist.contract.*;
+
+
 public class DeleteWalletTransaction extends TransactionRecord {
 
     private String userId;
@@ -23,5 +31,21 @@ public class DeleteWalletTransaction extends TransactionRecord {
     public String toString() {
         return "user: " + this.userId + " wallet: " + this.walletId;
     }
+
+    @Override
+    public Transaction recordToTransaction(){
+        Transaction transaction = Transaction.newBuilder()
+                .setDeleteWallet(
+                    DeleteWalletRequest.newBuilder()
+                        .setUserId(this.userId)
+                        .setWalletId(this.walletId)
+                        .build()
+                ).build();
+        return transaction;
+    }
     
+    public void execute(Map<String, String> wallets, Map<String, Long> balances){
+        wallets.remove(this.walletId);
+        balances.remove(this.walletId);
+    }
 }

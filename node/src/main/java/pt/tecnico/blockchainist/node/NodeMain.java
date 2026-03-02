@@ -4,6 +4,7 @@ import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import pt.tecnico.blockchainist.node.domain.NodeState;
+import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.node.grpc.NodeServiceImpl;
 
 import java.io.IOException;
@@ -70,7 +71,12 @@ public class NodeMain {
         // System.out.println("sequencerHost=" + sequencerHost);
         // System.out.println("sequencerPort=" + sequencerPort);
 
-        NodeState state = new NodeState();
+
+
+        NodeSequencerService sequencer = new NodeSequencerService(sequencerHost, sequencerPort);
+
+
+        NodeState state = new NodeState(sequencer);
         
         final BindableService impl = new NodeServiceImpl(state);
 
@@ -80,6 +86,7 @@ public class NodeMain {
             server.start();
 		    System.out.println("NodeMain: Server started");
             server.awaitTermination();
+            sequencer.closeChannel();
         } catch (IOException e) {
             // TODO
         } catch (InterruptedException e) {

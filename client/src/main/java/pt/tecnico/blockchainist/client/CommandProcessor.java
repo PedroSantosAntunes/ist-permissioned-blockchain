@@ -115,13 +115,13 @@ public class CommandProcessor {
         String walletId = split[2];
         Integer nodeIndex = Integer.parseInt(split[3]);
         Integer nodeDelay = Integer.parseInt(split[4]);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = this.nodes.get(nodeIndex).getStub();
+        ClientNodeService node = nodes.get(nodeIndex);
 
         // System.err.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
 
         CreateWalletRequest request = CreateWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            stub.createWallet(request);
+            node.createWallet(request);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -142,13 +142,13 @@ public class CommandProcessor {
         String walletId = split[2];
         Integer nodeIndex = Integer.parseInt(split[3]);
         Integer nodeDelay = Integer.parseInt(split[4]);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = this.nodes.get(nodeIndex).getStub();
+        ClientNodeService node = nodes.get(nodeIndex);
 
         // System.out.println("Delete Wallet: deleteWallet(" + userId + ", " + walletId + ")");
 
         DeleteWalletRequest request = DeleteWalletRequest.newBuilder().setUserId(userId).setWalletId(walletId).build();
         try {
-            stub.deleteWallet(request);
+            node.deleteWallet(request);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -168,13 +168,13 @@ public class CommandProcessor {
         String walletId = split[1];
         Integer nodeIndex = Integer.parseInt(split[2]);
         Integer nodeDelay = Integer.parseInt(split[3]);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        ClientNodeService node = nodes.get(nodeIndex);
         
         // System.out.println("Le Saldo: leSaldo(walletId)");
 
         ReadBalanceRequest request =  ReadBalanceRequest.newBuilder().setWalletId(walletId).build();
         try{
-            long balance = stub.readBalance(request).getBalance();
+            long balance = node.readBalance(request).getBalance();
             displayOperationResult(commandNumber, "OK", false);
             System.out.println(balance);
         } catch (StatusRuntimeException e) {
@@ -198,7 +198,7 @@ public class CommandProcessor {
         Long amount = Long.parseLong(split[4]);
         Integer nodeIndex = Integer.parseInt(split[5]);
         Integer nodeDelay = Integer.parseInt(split[6]);
-        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        ClientNodeService node = nodes.get(nodeIndex);
         
         // System.out.println("Le Saldo: leSaldo(walletId)");
 
@@ -209,7 +209,7 @@ public class CommandProcessor {
                                     .setValue(amount)
                                     .build();
         try{
-            stub.transfer(request);
+            node.transfer(request);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
@@ -227,12 +227,12 @@ public class CommandProcessor {
 
         Integer nodeIndex = Integer.parseInt(split[1]);
 
-        NodeServiceGrpc.NodeServiceBlockingStub stub = nodes.get(nodeIndex).getStub();
+        ClientNodeService node = nodes.get(nodeIndex);
         
         GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
 
         try{
-            List<Transaction> transactions = stub.getBlockchainState(request).getTransactionsList();
+            List<Transaction> transactions = node.getBlockchainState(request).getTransactionsList();
             
             displayOperationResult(commandNumber, "OK", false);
             
@@ -423,9 +423,9 @@ public class CommandProcessor {
      */
     private static void displayOperationResult(Long commandNumber, String statusMessage, boolean err) {
         if(err){
-            System.err.println(commandNumber + " " + statusMessage);
+            System.err.println("> " + statusMessage + " " + commandNumber);
         } else {
-            System.out.println(commandNumber + " " + statusMessage);
+            System.out.println("> " + statusMessage + " " + commandNumber);
         }
     }
 }

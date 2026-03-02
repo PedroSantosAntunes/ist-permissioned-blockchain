@@ -9,6 +9,7 @@ import "common.proto";
 // the .proto file.
 option java_multiple_files = true;
 
+// BroadcastRequest is sent when the node received a transaction request from a client and need to send that request to sequencer
 message BroadcastRequest {
   Transaction transaction = 1;
 }
@@ -17,6 +18,8 @@ message BroadcastResponse {
   int32 sequence_number = 1;
 }
 
+
+// DeliverTransactionRequest is sent when the node needs to fetch transactions from the sequencer
 message DeliverTransactionRequest {
   int32 sequence_number = 1;
 }
