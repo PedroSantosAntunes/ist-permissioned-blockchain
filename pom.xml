@@ -26,6 +26,7 @@
 		<module>node</module>
 		<module>transaction</module>
 		<module>sequencer</module>
+		<module>common</module>
 	</modules>
 
 </project>
