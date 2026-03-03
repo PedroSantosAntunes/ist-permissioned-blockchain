@@ -6,11 +6,7 @@ import pt.tecnico.blockchainist.contract.*;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 
-import static io.grpc.Status.ALREADY_EXISTS;
-import static io.grpc.Status.FAILED_PRECONDITION;
-import static io.grpc.Status.INVALID_ARGUMENT;
-import static io.grpc.Status.NOT_FOUND;
-import static io.grpc.Status.PERMISSION_DENIED;
+import static io.grpc.Status.*;
 
 import java.util.ArrayList;
 
@@ -22,7 +18,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         this.state = state;
     }
 
-
     @Override
     public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
 
@@ -30,31 +25,12 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        Status result = state.createWallet(userId, walletId);
-        
-        switch (result) {
-            case BAD_USER_ERR:
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid User Format: use only numbers and letter without spaces").asRuntimeException());
-                break;
-            
-            case BAD_WALLET_ERR:
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letter without spaces").asRuntimeException());
-                break;
-            
-            case UNIQUE_USER_ERR:
-                responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated User: user already exists").asRuntimeException());
-                break;
-
-            case UNIQUE_WALLET_ERR:
-                responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated Wallet: wallet already exists").asRuntimeException());
-                break;
-        
-            default:
-                CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-                break;
-        }
+        InternalResponseStatus result = state.createWallet(userId, walletId);  
+        if(!handleError(result, responseObserver)) {
+            CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        };
     }
 
     @Override
@@ -64,41 +40,12 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        Status result = state.deleteWallet(userId, walletId);
-        
-        
-        switch (result) {
-            case BAD_USER_ERR:
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid User Format: use only numbers and letter without spaces").asRuntimeException());
-                break;
-
-            case BAD_WALLET_ERR:
-                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letter without spaces").asRuntimeException());
-                break;
-                
-            case UNIQUE_USER_ERR:
-                responseObserver.onError(NOT_FOUND.withDescription("Not Found User: user does not exist").asRuntimeException());
-                break;
-
-            case UNIQUE_WALLET_ERR:
-                responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
-                break;
-            
-            case BALANCE_ERR:
-                responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance needs to be zero").asRuntimeException());
-                break;
-            
-            case AUTHORIZATION_ERR:
-                responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belongs to user").asRuntimeException());
-                break;
-            
-            default:
-                DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-                break;
-        }
-  
+        InternalResponseStatus result = state.deleteWallet(userId, walletId);
+        if(!handleError(result, responseObserver)) {
+            DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }  
     }
 
     @Override
@@ -127,33 +74,13 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String dstWalletId = request.getDstWalletId();
         Long amount = request.getValue();
 
-        Status result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
-        
-        switch (result) {
-            case UNIQUE_WALLET_ERR:
-                responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
-                break;
-            
-            case AUTHORIZATION_ERR:
-                responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belongs to user").asRuntimeException());
-                break;
-        
-            case BALANCE_ERR:
-                responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance is not enough").asRuntimeException());
-                break;
-        
-            case BAD_AMOUNT:
-                responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
-                break;
-        
-            default:
-                TransferResponse response = TransferResponse.getDefaultInstance();
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-                break;
-        }
+        InternalResponseStatus result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
+        if(!handleError(result, responseObserver)) {
+            TransferResponse response = TransferResponse.getDefaultInstance();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }  
     }
-
 
     @Override
     public void getBlockchainState(GetBlockchainStateRequest request, StreamObserver<GetBlockchainStateResponse> responseObserver){
@@ -170,8 +97,46 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         GetBlockchainStateResponse response = builder.build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
-
     }
 
 
+    private boolean handleError(InternalResponseStatus status, StreamObserver<?> responseObserver) {
+        if (status == InternalResponseStatus.OK) {
+            return false;
+        }
+
+        switch (status) {
+            case BAD_USER_FORMAT:
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid User Format: use only numbers and letters without spaces").asRuntimeException());
+                break;
+            case BAD_WALLET_FORMAT:
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letters without spaces").asRuntimeException());
+                break;
+            case WALLET_ALREADY_EXISTS:
+                responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated Wallet: wallet already exists").asRuntimeException());
+                break;
+            case WALLET_NOT_FOUND:
+                responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
+                break;
+            case USER_NOT_FOUND:
+                responseObserver.onError(NOT_FOUND.withDescription("Not Found User: user does not exist").asRuntimeException());
+                break;
+            case NOT_AUTHORIZED:
+                responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: wallet does not belong to user").asRuntimeException());
+                break;
+            case REMAINING_BALANCE:
+                responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance needs to be zero").asRuntimeException());
+                break;
+            case INSUFFICIENT_BALANCE:
+                responseObserver.onError(FAILED_PRECONDITION.withDescription("PreCondition Required: balance is not enough").asRuntimeException());
+                break;
+            case NEGATIVE_AMOUNT:
+                responseObserver.onError(INVALID_ARGUMENT.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
+                break;
+            default:
+                responseObserver.onError(UNKNOWN.withDescription("Unknown internal error").asRuntimeException());
+                break;
+        }
+        return true;
+    }
 }

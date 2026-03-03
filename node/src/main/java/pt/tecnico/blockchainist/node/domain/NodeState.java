@@ -13,7 +13,7 @@ import pt.tecnico.blockchainist.contract.CreateWalletRequest;
 import pt.tecnico.blockchainist.contract.DeleteWalletRequest;
 import pt.tecnico.blockchainist.contract.DeliverTransactionRequest;
 import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
-import pt.tecnico.blockchainist.contract.Status;
+import pt.tecnico.blockchainist.contract.InternalResponseStatus;
 import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.contract.TransferRequest;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
@@ -46,10 +46,10 @@ public class NodeState {
         this.sequencer = sequencer;
     }
     
-    public synchronized Status createWallet(String userId, String walletId) {
+    public synchronized InternalResponseStatus createWallet(String userId, String walletId) {
         
-        Status argsStatus = checkCreateWalletArgs(userId, walletId);
-        if (argsStatus != Status.OK) { return argsStatus; }
+        InternalResponseStatus argsInternalResponseStatus = checkCreateWalletArgs(userId, walletId);
+        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         
         System.err.println("NodeState: createWallet called!\n\t" + userId + "\n\t" + walletId);
 
@@ -74,13 +74,13 @@ public class NodeState {
 
         System.err.println("\twallets = " + wallets);
         System.err.println("\ttransaction = " + transaction);
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
-    public synchronized Status deleteWallet(String userId, String walletId) {
+    public synchronized InternalResponseStatus deleteWallet(String userId, String walletId) {
         
-        Status argsStatus = checkDeleteWalletArgs(userId, walletId);
-        if (argsStatus != Status.OK) { return argsStatus; }
+        InternalResponseStatus argsInternalResponseStatus = checkDeleteWalletArgs(userId, walletId);
+        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         System.out.println("NodeState: deleteWallet called!\n\t" + userId + "\n\t" + walletId); 
         
         Transaction transaction = Transaction.newBuilder()
@@ -98,13 +98,13 @@ public class NodeState {
         
         System.err.println("\ttransaction = " + transaction);
         System.err.println("\tSuccessfully Removed!");
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
-    public synchronized Status transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    public synchronized InternalResponseStatus transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
 
-        Status argsStatus = checkTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
-        if (argsStatus != Status.OK) { return argsStatus; }
+        InternalResponseStatus argsInternalResponseStatus = checkTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
+        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         System.out.println("NodeState: tranfer called!\n\t" + srcUserId + "\n\tsrc: " + srcWalletId + "\n\tdst: " + dstWalletId + "\n\tamount: " + amount); 
 
         Transaction transaction = Transaction.newBuilder()
@@ -124,7 +124,7 @@ public class NodeState {
 
         System.err.println("\ttransaction = " + transaction);
         System.err.println("\tSuccessfully Transferred!");
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
     public long readBalance(String walletId) {
@@ -164,77 +164,77 @@ public class NodeState {
     }
 
 
-    private Status checkCreateWalletArgs(String userId, String walletId) {
+    private InternalResponseStatus checkCreateWalletArgs(String userId, String walletId) {
         if (userId == null || !validFormat(userId)) {
             System.err.println("Bad user id: " + userId);
-            return Status.BAD_USER_ERR;
+            return InternalResponseStatus.BAD_USER_FORMAT;
         }
         if (walletId == null || !validFormat(walletId)) {
             System.err.println("Bad wallet id: " + walletId);
-            return Status.BAD_WALLET_ERR;
+            return InternalResponseStatus.BAD_WALLET_FORMAT;
         }
         if (walletExists(walletId)) {
             System.err.println("Wallet id already exists: " + walletId);
-            return Status.UNIQUE_WALLET_ERR;
+            return InternalResponseStatus.WALLET_ALREADY_EXISTS;
         }
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
-    private Status checkDeleteWalletArgs(String userId, String walletId) {
+    private InternalResponseStatus checkDeleteWalletArgs(String userId, String walletId) {
         if (userId == null || !validFormat(userId)) {
             System.err.println("Bad user id: " + userId);
-            return Status.BAD_USER_ERR;
+            return InternalResponseStatus.BAD_USER_FORMAT;
         }
         if (walletId == null || !validFormat(walletId)) {
             System.err.println("Bad wallet id: " + walletId);
-            return Status.BAD_WALLET_ERR;
+            return InternalResponseStatus.BAD_WALLET_FORMAT;
         }
         if (!walletExists(walletId)) {
             System.err.println("Wallet id does not exist: " + walletId);
-            return Status.UNIQUE_WALLET_ERR; 
+            return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
         if (!userExists(userId)) {
             System.err.println("User id does not exist: " + userId);
-            return Status.UNIQUE_USER_ERR;
+            return InternalResponseStatus.USER_NOT_FOUND;
         }
 
         long balance = wallets.get(walletId).getBalance();
         if (!isZeroBalance(balance)) {
             System.err.println("Wallet id with balance other than 0: " + balance);
-            return Status.BALANCE_ERR;
+            return InternalResponseStatus.REMAINING_BALANCE;
         } 
         if (!isAuthorized(walletId, userId)) {
             System.err.println("Wallet id " + walletId + "does not belong to user " + userId);
-            return Status.AUTHORIZATION_ERR;
+            return InternalResponseStatus.NOT_AUTHORIZED;
         }
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
 
-    private Status checkTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) { 
+    private InternalResponseStatus checkTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) { 
         if (!walletExists(srcWalletId)){ 
             System.err.println("Wallet id does not exist: " + srcWalletId);
-            return Status.UNIQUE_WALLET_ERR; 
+            return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
         if (!walletExists(dstWalletId)){ 
             System.err.println("Wallet id does not exist: " + dstWalletId);
-            return Status.UNIQUE_WALLET_ERR; 
+            return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
         if (!isAuthorized(srcWalletId, srcUserId)) {
             System.err.println("Wallet id " + srcWalletId + "does not belong to user " + srcUserId);
-            return Status.AUTHORIZATION_ERR;
+            return InternalResponseStatus.NOT_AUTHORIZED;
         }
 
         long srcBalance = wallets.get(srcWalletId).getBalance();
         if (!hasEnoughBalance(srcBalance, amount)) {
             System.err.println("Wallet id " + srcWalletId + "has not enough money (" + srcBalance + ") to transfer " + amount);
-            return Status.BALANCE_ERR;
+            return InternalResponseStatus.INSUFFICIENT_BALANCE;
         }
         if (!isPositiveAmount(amount)) {
             System.err.println(amount + "should be positive");
-            return Status.BAD_AMOUNT;
+            return InternalResponseStatus.NEGATIVE_AMOUNT;
         } 
-        return Status.OK;
+        return InternalResponseStatus.OK;
     }
 
 
