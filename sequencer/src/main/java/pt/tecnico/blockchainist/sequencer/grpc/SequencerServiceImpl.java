@@ -3,6 +3,7 @@ package pt.tecnico.blockchainist.sequencer.grpc;
 
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 
 public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceImplBase{
@@ -21,6 +22,8 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
     public void broadcast(BroadcastRequest request, StreamObserver<BroadcastResponse> responseObserver){
 
         Transaction transaction = request.getTransaction();
+
+        Debug.log("Broadcast request received!\n"+ transaction);
         
         int sequence_number = state.Broadcast(transaction);
 
@@ -40,6 +43,8 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
     public void deliverTransaction(DeliverTransactionRequest resquest, StreamObserver<DeliverTransactionResponse> responseObserver){
 
         int sequence_number = resquest.getSequenceNumber();
+
+        Debug.log("Deliver transaction request received!\n\tSequence number: " + sequence_number);
 
         Transaction transaction = state.DeliverTransaction(sequence_number);
 

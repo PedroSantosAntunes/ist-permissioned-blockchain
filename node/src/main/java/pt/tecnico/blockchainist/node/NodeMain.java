@@ -7,6 +7,8 @@ import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.node.grpc.NodeServiceImpl;
 
+import pt.tecnico.blockchainist.debug.Debug;
+
 import java.io.IOException;
 
 public class NodeMain {
@@ -14,6 +16,7 @@ public class NodeMain {
         // TODO
 
         System.out.println(NodeMain.class.getSimpleName());
+        Debug.log("Debug is ON");
 
         int nodePort;
         String nodeOrg;
@@ -66,13 +69,6 @@ public class NodeMain {
             return;
         }
 
-        // System.out.println("nodePort=" + nodePort);
-        // System.out.println("nodeOrg=" + nodeOrg);
-        // System.out.println("sequencerHost=" + sequencerHost);
-        // System.out.println("sequencerPort=" + sequencerPort);
-
-
-
         NodeSequencerService sequencer = new NodeSequencerService(sequencerHost, sequencerPort);
 
 
@@ -84,7 +80,7 @@ public class NodeMain {
         
         try {
             server.start();
-		    System.out.println("NodeMain: Server started");
+		    Debug.log("Node started");
             server.awaitTermination();
             sequencer.closeChannel();
         } catch (IOException e) {

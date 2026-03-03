@@ -4,6 +4,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.tecnico.blockchainist.contract.*;
 
+import pt.tecnico.blockchainist.debug.Debug;
+
 public class NodeSequencerService {
 
 	final ManagedChannel channel;
@@ -25,10 +27,12 @@ public class NodeSequencerService {
 
 
 	public BroadcastResponse broadcast(BroadcastRequest request){
+		Debug.log("Sent broadcast request to sequencer!\n" + request);
 		return stub.broadcast(request);
 	}
 
 	public DeliverTransactionResponse deliverTransaction(DeliverTransactionRequest request){
+		Debug.log("Sent deliver transaction request to sequencer!\n" + request);
 		return stub.deliverTransaction(request);
 	}
 

@@ -10,6 +10,8 @@ import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 import pt.tecnico.blockchainist.contract.Transaction;
 
+import pt.tecnico.blockchainist.debug.Debug;
+
 public class CommandProcessor {
 
     private static final String SPACE = " ";
@@ -117,14 +119,13 @@ public class CommandProcessor {
         Integer nodeDelay = Integer.parseInt(split[4]);
         ClientNodeService node = nodes.get(nodeIndex);
 
-        // System.err.println("Create Wallet: createWallet(" + userId + ", " + walletId + ")");
-
         try {
             node.createWallet(userId, walletId);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
+
     }
 
     /**
@@ -143,14 +144,13 @@ public class CommandProcessor {
         Integer nodeDelay = Integer.parseInt(split[4]);
         ClientNodeService node = nodes.get(nodeIndex);
 
-        // System.out.println("Delete Wallet: deleteWallet(" + userId + ", " + walletId + ")");
-
         try {
             node.deleteWallet(userId, walletId);
             displayOperationResult(commandNumber, "OK", false);
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
+
     }
 
     /**
@@ -167,8 +167,6 @@ public class CommandProcessor {
         Integer nodeIndex = Integer.parseInt(split[2]);
         Integer nodeDelay = Integer.parseInt(split[3]);
         ClientNodeService node = nodes.get(nodeIndex);
-        
-        // System.out.println("Le Saldo: leSaldo(walletId)");
 
         try{
             long balance = node.readBalance(walletId);
@@ -177,6 +175,7 @@ public class CommandProcessor {
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
+
     }
 
     /**
@@ -197,7 +196,6 @@ public class CommandProcessor {
         Integer nodeDelay = Integer.parseInt(split[6]);
         ClientNodeService node = nodes.get(nodeIndex);
         
-        // System.out.println("Le Saldo: leSaldo(walletId)");
         try{
             node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount);
             displayOperationResult(commandNumber, "OK", false);
@@ -228,12 +226,10 @@ public class CommandProcessor {
                 System.out.println(tx);
             }
 
-            // TODO print blockchain
         } catch (StatusRuntimeException e) {
             displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
         }
 
-        // TODO
     }
 
     private void pause(String[] split) {

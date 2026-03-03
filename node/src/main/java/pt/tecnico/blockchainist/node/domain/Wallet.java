@@ -28,4 +28,9 @@ public class Wallet {
     public void setBalance(long newBalance){
         this.balance = newBalance;
     }
+
+    @Override
+    public String toString() {
+        return "Wallet\n\tWalletId: " + walletId + "\n\tUserID: " + userId + "\n\tBalance: " + balance + "\n";
+    }
 }

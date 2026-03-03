@@ -2,6 +2,7 @@ package pt.tecnico.blockchainist.sequencer;
 import java.io.IOException;
 
 import io.grpc.ServerBuilder;
+import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 import pt.tecnico.blockchainist.sequencer.grpc.SequencerServiceImpl;
 import io.grpc.BindableService;
@@ -9,6 +10,10 @@ import io.grpc.Server;
 
 public class SequencerMain {
     public static void main(String[] args) throws IOException, InterruptedException {
+
+        System.out.println(SequencerMain.class.getSimpleName());
+        Debug.log("Debug is ON");
+
         // check arguments
         if (args.length < 1) {
             System.err.println("Argument(s) missing!");
@@ -36,7 +41,7 @@ public class SequencerMain {
 
         Server server = ServerBuilder.forPort(port).addService(impl).build(); // TODO: ADD SERVICE
         server.start();
-        System.out.println("Sequencer started");
+        Debug.log("Sequencer started");
         server.awaitTermination();
     }
 

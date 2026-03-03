@@ -3,6 +3,7 @@ package pt.tecnico.blockchainist.node.grpc;
 
 import pt.tecnico.blockchainist.transaction.domain.*;
 import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 
@@ -21,9 +22,10 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
 
-        System.out.println("NodeServiceImpl: createWallet");
         String userId = request.getUserId();
         String walletId = request.getWalletId();
+
+        Debug.log("Create wallet request received!\n\tUserID: " + userId + "\n\tWalletID: " + walletId);
 
         InternalResponseStatus result = state.createWallet(userId, walletId);  
         if(!handleError(result, responseObserver)) {
@@ -36,9 +38,10 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) { 
         
-        System.out.println("NodeServiceImpl: deleteWallet");
         String userId = request.getUserId();
         String walletId = request.getWalletId();
+
+        Debug.log("Delete wallet request received!\n\tUserID: " + userId + "\n\tWalletID: " + walletId);
 
         InternalResponseStatus result = state.deleteWallet(userId, walletId);
         if(!handleError(result, responseObserver)) {
@@ -51,8 +54,9 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void readBalance(ReadBalanceRequest request, StreamObserver<ReadBalanceResponse> responseObserver) {
         
-        System.out.println("NodeServiceImpl: readBalance");
         String walletId = request.getWalletId();
+
+        Debug.log("Read balance request received!\n\tWalletID: " + walletId);
 
         long balance = state.readBalance(walletId);
         if (balance == -1L) {
@@ -68,11 +72,15 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
 
-        System.out.println("NodeServiceImpl: transfer");
         String srcUserId = request.getSrcUserId();
         String srcWalletId = request.getSrcWalletId();
         String dstWalletId = request.getDstWalletId();
         Long amount = request.getValue();
+
+        Debug.log("Transfer currency request received!\n\tSourceUserID: " + srcUserId + " SourceWalletID: " + srcWalletId +
+            "\n\tDestWalletID: " + dstWalletId +
+            "\n\tAmount: " + amount
+        );
 
         InternalResponseStatus result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
         if(!handleError(result, responseObserver)) {
@@ -84,8 +92,9 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void getBlockchainState(GetBlockchainStateRequest request, StreamObserver<GetBlockchainStateResponse> responseObserver){
-        System.out.println("NodeServiceImpl: getBlockchainState");
         
+		Debug.log("Get blockchain state request received!");
+
         ArrayList<TransactionRecord> transactions = state.getBlockchainState(); // get blockchain
 
         GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();

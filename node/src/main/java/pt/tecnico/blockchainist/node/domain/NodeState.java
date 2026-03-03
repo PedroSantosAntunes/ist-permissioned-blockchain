@@ -8,23 +8,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.contract.BroadcastRequest;
-import pt.tecnico.blockchainist.contract.BroadcastResponse;
 import pt.tecnico.blockchainist.contract.CreateWalletRequest;
 import pt.tecnico.blockchainist.contract.DeleteWalletRequest;
 import pt.tecnico.blockchainist.contract.DeliverTransactionRequest;
-import pt.tecnico.blockchainist.contract.ReadBalanceResponse;
 import pt.tecnico.blockchainist.contract.InternalResponseStatus;
 import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.contract.TransferRequest;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.transaction.domain.*;
 
+import pt.tecnico.blockchainist.debug.Debug;
+
 public class NodeState {
     
-    // TODO Declare state maintained by each node
-    // - The set of wallets, indexed by their identifiers, and their owner user identifiers (including the 'bc' wallet)
-    // - The balance of each wallet
-    // - The transaction ledger (up to A.2, a chain of individual transactions; after B.1, a chain of blocks)
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
     private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
@@ -50,8 +46,6 @@ public class NodeState {
         
         InternalResponseStatus argsInternalResponseStatus = checkCreateWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-        
-        System.err.println("NodeState: createWallet called!\n\t" + userId + "\n\t" + walletId);
 
         // Send to sequencer new BroadcastRequest
 
@@ -72,8 +66,8 @@ public class NodeState {
 
         pullTransactions(target_transaction);
 
-        System.err.println("\twallets = " + wallets);
-        System.err.println("\ttransaction = " + transaction);
+        Debug.log("Wallet created!\nWallets:\n" + wallets.values());
+
         return InternalResponseStatus.OK;
     }
 
@@ -81,7 +75,6 @@ public class NodeState {
         
         InternalResponseStatus argsInternalResponseStatus = checkDeleteWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-        System.out.println("NodeState: deleteWallet called!\n\t" + userId + "\n\t" + walletId); 
         
         Transaction transaction = Transaction.newBuilder()
                 .setDeleteWallet(
@@ -96,8 +89,8 @@ public class NodeState {
 
         pullTransactions(target_transaction);
         
-        System.err.println("\ttransaction = " + transaction);
-        System.err.println("\tSuccessfully Removed!");
+        Debug.log("Wallet deleted!\nWallets:\n" + wallets.values());
+
         return InternalResponseStatus.OK;
     }
 
@@ -105,7 +98,6 @@ public class NodeState {
 
         InternalResponseStatus argsInternalResponseStatus = checkTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-        System.out.println("NodeState: tranfer called!\n\t" + srcUserId + "\n\tsrc: " + srcWalletId + "\n\tdst: " + dstWalletId + "\n\tamount: " + amount); 
 
         Transaction transaction = Transaction.newBuilder()
                 .setTransfer(
@@ -122,23 +114,23 @@ public class NodeState {
 
         pullTransactions(target_transaction);
 
-        System.err.println("\ttransaction = " + transaction);
-        System.err.println("\tSuccessfully Transferred!");
+        Debug.log("Currency transfered!\nWallets:\n" + wallets.values());
+
         return InternalResponseStatus.OK;
     }
 
     public long readBalance(String walletId) {
         
-        System.out.println("NodeState: readBalance called!\n\t" + walletId); 
         Wallet wallet = wallets.getOrDefault(walletId, null);
         if (wallet == null){ return -1L; }
 
-        System.out.println("\t" + wallet.getBalance());
+        Debug.log("Current balance: " + wallet.getBalance());
         return wallet.getBalance();  
     }
 
     // todo change return type to list of transactions
-    public ArrayList<TransactionRecord> getBlockchainState(){    
+    public ArrayList<TransactionRecord> getBlockchainState(){  
+		
         return transactions;
     }
 
@@ -159,7 +151,6 @@ public class NodeState {
             
             transactions.add(txRecord);
             local_transaction_counter++;
-
         }
     }
 
