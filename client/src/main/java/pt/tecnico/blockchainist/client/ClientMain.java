@@ -59,7 +59,8 @@ public class ClientMain {
 
     private static void terminateNodeChannels(ArrayList<ClientNodeService> nodes) {
         for (ClientNodeService node : nodes) {
-            node.closeChannel();
+            if (node != null) 
+                node.closeChannel();
         }
     }
 
