@@ -46,13 +46,9 @@ public class SequencerState {
 
     private synchronized Transaction getTransaction(int sequence_number){
         
-        for (TransactionRecord tx : transactions) {            
-            if (tx.getSequenceNumber() == sequence_number) {                
-                Transaction transaction = tx.recordToTransaction();
-                return transaction;
-            }
-        }
-        return null;
+        TransactionRecord txRecord = transactions.get(sequence_number-1);
+        
+        return txRecord.recordToTransaction();
     }
 
     
