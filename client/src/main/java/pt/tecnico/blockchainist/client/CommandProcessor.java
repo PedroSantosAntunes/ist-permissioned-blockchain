@@ -411,9 +411,9 @@ public class CommandProcessor {
      */
     private static void displayOperationResult(Long commandNumber, String statusMessage, boolean err) {
         if(err){
-            System.err.println("> " + statusMessage + " " + commandNumber);
+            System.err.println(statusMessage + " " + commandNumber);
         } else {
-            System.out.println("> " + statusMessage + " " + commandNumber);
+            System.out.println(statusMessage + " " +  commandNumber);
         }
     }
 }
