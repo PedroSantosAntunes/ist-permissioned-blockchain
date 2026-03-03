@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-// Checks
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.contract.BroadcastRequest;
@@ -15,7 +14,6 @@ import pt.tecnico.blockchainist.contract.InternalResponseStatus;
 import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.contract.TransferRequest;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
-import pt.tecnico.blockchainist.transaction.domain.*;
 
 import pt.tecnico.blockchainist.debug.Debug;
 
@@ -23,10 +21,9 @@ public class NodeState {
     
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
-    private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
-    int local_transaction_counter = 0;
-
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
+    private final ArrayList<Transaction> transactions = new ArrayList<Transaction>();
+    int local_transaction_counter = 0;
 
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
@@ -47,12 +44,6 @@ public class NodeState {
         InternalResponseStatus argsInternalResponseStatus = checkCreateWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
-        // Send to sequencer new BroadcastRequest
-
-        // Send DeliverTransactionRequest's to sequencer until the local transaction counter is equal 
-        // to the transaction number from the BroadcastResponse
-
-
         Transaction transaction = Transaction.newBuilder()
         .setCreateWallet(
             CreateWalletRequest.newBuilder()
@@ -65,7 +56,7 @@ public class NodeState {
         int target_transaction = sequencer.broadcast(request).getSequenceNumber();
 
         pullTransactions(target_transaction);
-
+        
         Debug.log("Wallet created!\nWallets:\n" + wallets.values());
 
         return InternalResponseStatus.OK;
@@ -88,7 +79,7 @@ public class NodeState {
         int target_transaction = sequencer.broadcast(request).getSequenceNumber();
 
         pullTransactions(target_transaction);
-        
+
         Debug.log("Wallet deleted!\nWallets:\n" + wallets.values());
 
         return InternalResponseStatus.OK;
@@ -128,9 +119,8 @@ public class NodeState {
         return wallet.getBalance();  
     }
 
-    // todo change return type to list of transactions
-    public ArrayList<TransactionRecord> getBlockchainState(){  
-		
+
+    public ArrayList<Transaction> getBlockchainState(){  		
         return transactions;
     }
 
@@ -139,18 +129,46 @@ public class NodeState {
         // to the transaction number from the BroadcastResponse
         
         while(local_transaction_counter < target_transaction){
+            
             int next_transaction = local_transaction_counter + 1;
             DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
-
-            Transaction transaction = sequencer.deliverTransaction(request).getTransaction();
-
-            TransactionRecord txRecord = TransactionRecord.transactionToRecord(transaction, next_transaction);
-
-            ExecutionVisitor executor = new ExecutionVisitor(wallets);            
-            txRecord.accept(executor);
             
-            transactions.add(txRecord);
+            Transaction transaction = sequencer.deliverTransaction(request).getTransaction();
+            
+            executeTransaction(transaction);
+            
+            transactions.add(transaction);
+
             local_transaction_counter++;
+        }
+    }
+
+    private void executeTransaction(Transaction transaction) {
+        switch (transaction.getOperationCase()) {
+            case CREATE_WALLET:
+                CreateWalletRequest createReq = transaction.getCreateWallet();
+                wallets.put(createReq.getWalletId(), new Wallet(createReq.getWalletId(), createReq.getUserId(), 0L));
+                Debug.log("Wallet created: " + createReq.getWalletId());
+                break;
+                
+            case DELETE_WALLET:
+                DeleteWalletRequest deleteReq = transaction.getDeleteWallet();
+                wallets.remove(deleteReq.getWalletId());
+                Debug.log("Wallet deleted: " + deleteReq.getWalletId());
+                break;
+                
+            case TRANSFER:
+                TransferRequest transferReq = transaction.getTransfer();
+                Wallet srcWallet = wallets.get(transferReq.getSrcWalletId());
+                Wallet dstWallet = wallets.get(transferReq.getDstWalletId());
+                srcWallet.setBalance(srcWallet.getBalance() - transferReq.getValue());
+                dstWallet.setBalance(dstWallet.getBalance() + transferReq.getValue());
+                Debug.log("Transferred: " + transferReq.getValue() + " : " + transferReq.getSrcWalletId() + " > " + transferReq.getDstWalletId());
+                break;
+                
+            case OPERATION_NOT_SET:
+                System.err.println("Erro: Operação não definida");
+                break;
         }
     }
 

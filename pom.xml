@@ -24,7 +24,6 @@
 		<module>contract</module>
 		<module>client</module>
 		<module>node</module>
-		<module>transaction</module>
 		<module>sequencer</module>
 		<module>common</module>
 	</modules>

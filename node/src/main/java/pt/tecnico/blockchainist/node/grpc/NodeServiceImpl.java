@@ -1,7 +1,6 @@
 package pt.tecnico.blockchainist.node.grpc;
 
 
-import pt.tecnico.blockchainist.transaction.domain.*;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.stub.StreamObserver;
@@ -95,12 +94,12 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         
 		Debug.log("Get blockchain state request received!");
 
-        ArrayList<TransactionRecord> transactions = state.getBlockchainState(); // get blockchain
+        ArrayList<Transaction> transactions = state.getBlockchainState();
 
         GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();
 
-        for (TransactionRecord tx : transactions) {
-            builder.addTransactions(tx.recordToTransaction());
+        for (Transaction tx : transactions) {
+            builder.addTransactions(tx);
         }
 
         GetBlockchainStateResponse response = builder.build();
