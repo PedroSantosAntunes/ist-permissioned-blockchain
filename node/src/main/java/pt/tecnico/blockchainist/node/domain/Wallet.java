@@ -4,9 +4,9 @@ public class Wallet {
 
     private String walletId;
     private String userId;
-    private Long balance;
+    private long balance;
 
-    public Wallet(String walletId, String userId, Long balance){
+    public Wallet(String walletId, String userId, long balance){
         this.walletId = walletId;
         this.userId = userId;
         this.balance = balance;
@@ -20,12 +20,12 @@ public class Wallet {
         return this.userId;
     }
 
-    public Long getBalance(){
+    public long getBalance(){
         return this.balance;
     }
 
 
-    public void setBalance(Long newBalance){
+    public void setBalance(long newBalance){
         this.balance = newBalance;
     }
 }

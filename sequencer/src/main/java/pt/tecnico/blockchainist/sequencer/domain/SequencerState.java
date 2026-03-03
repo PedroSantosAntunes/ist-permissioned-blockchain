@@ -26,7 +26,7 @@ public class SequencerState {
         global_transaction_counter++;
         
         TransactionRecord transaction = TransactionRecord.transactionToRecord(tx, global_transaction_counter);
-        transactions.addFirst(transaction);
+        transactions.add(transaction);
 
         return global_transaction_counter;
     }

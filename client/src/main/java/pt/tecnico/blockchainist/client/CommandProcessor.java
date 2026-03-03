@@ -413,7 +413,7 @@ public class CommandProcessor {
         if(err){
             System.err.println(statusMessage + " " + commandNumber);
         } else {
-            System.out.println(statusMessage + " " +  commandNumber);
+            System.out.println(statusMessage + " " + commandNumber);
         }
     }
 }
