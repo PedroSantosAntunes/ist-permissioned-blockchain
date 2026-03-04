@@ -26,11 +26,11 @@ public class NodeSequencerService {
 		return stub.broadcast(request).getSequenceNumber();
 	}
 
-	public DeliverTransactionResponse deliverTransaction(int next_transaction){
+	public Transaction deliverTransaction(int next_transaction){
 		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
 		
 		Debug.log("Sent deliver transaction request to sequencer!\n" + request);
-		return stub.deliverTransaction(request);
+		return stub.deliverTransaction(request).getTransaction();
 	}
 
 	public void closeChannel(){
