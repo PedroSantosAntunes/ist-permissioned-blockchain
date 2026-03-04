@@ -43,18 +43,8 @@ public class NodeState {
         
         InternalResponseStatus argsInternalResponseStatus = checkCreateWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-
-
-        Transaction transaction = Transaction.newBuilder()
-        .setCreateWallet(
-            CreateWalletRequest.newBuilder()
-            .setUserId(userId)
-            .setWalletId(walletId)
-            .build()
-        ).build();
-
-        int target_transaction = sequencer.broadcast(transaction);
-
+        
+        int target_transaction = sequencer.broadcastCreateWallet(userId, walletId);
         pullTransactions(target_transaction);
         
         Debug.log("Wallet created!\nWallets:\n" + wallets.values());
@@ -67,16 +57,7 @@ public class NodeState {
         InternalResponseStatus argsInternalResponseStatus = checkDeleteWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         
-        Transaction transaction = Transaction.newBuilder()
-                .setDeleteWallet(
-                    DeleteWalletRequest.newBuilder()
-                        .setUserId(userId)
-                        .setWalletId(walletId)
-                        .build()
-                ).build();
-
-        int target_transaction = sequencer.broadcast(transaction);
-
+        int target_transaction = sequencer.broadcastDeleteWallet(userId, walletId);
         pullTransactions(target_transaction);
 
         Debug.log("Wallet deleted!\nWallets:\n" + wallets.values());
@@ -89,18 +70,7 @@ public class NodeState {
         InternalResponseStatus argsInternalResponseStatus = checkTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
-        Transaction transaction = Transaction.newBuilder()
-                .setTransfer(
-                    TransferRequest.newBuilder()
-                        .setSrcUserId(srcUserId)
-                        .setSrcWalletId(srcWalletId)
-                        .setDstWalletId(dstWalletId)
-                        .setValue(amount)
-                        .build()
-                ).build();
-
-        int target_transaction = sequencer.broadcast(transaction);
-
+        int target_transaction = sequencer.broadcastTransfer(srcUserId, srcWalletId, dstWalletId, amount);
         pullTransactions(target_transaction);
 
         Debug.log("Currency transfered!\nWallets:\n" + wallets.values());
@@ -130,7 +100,7 @@ public class NodeState {
             
             int next_transaction = local_transaction_counter + 1;
             
-            Transaction transaction = sequencer.deliverTransaction(next_transaction).getTransaction();
+            Transaction transaction = sequencer.deliverTransaction(next_transaction);
             
             executeTransaction(transaction);
             

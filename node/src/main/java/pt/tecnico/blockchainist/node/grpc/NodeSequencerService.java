@@ -19,12 +19,49 @@ public class NodeSequencerService {
 		this.stub = SequencerServiceGrpc.newBlockingStub(channel);
     }
 
-	public int broadcast(Transaction transaction){		
+	private int broadcast(Transaction transaction){		
         BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
 		Debug.log("Sent broadcast request to sequencer!\n" + request);
 		return stub.broadcast(request).getSequenceNumber();
 	}
+
+
+	public int broadcastCreateWallet(String userId, String walletId){
+		Transaction transaction = Transaction.newBuilder()
+        .setCreateWallet(
+            CreateWalletRequest.newBuilder()
+            .setUserId(userId)
+            .setWalletId(walletId)
+            .build()
+        ).build();
+		return broadcast(transaction);
+	}
+
+	public int broadcastDeleteWallet(String userId, String walletId){
+		Transaction transaction = Transaction.newBuilder()
+                .setDeleteWallet(
+                    DeleteWalletRequest.newBuilder()
+                        .setUserId(userId)
+                        .setWalletId(walletId)
+                        .build()
+                ).build();
+		return broadcast(transaction);
+	}
+
+	public int broadcastTransfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount){
+		Transaction transaction = Transaction.newBuilder()
+                .setTransfer(
+                    TransferRequest.newBuilder()
+                        .setSrcUserId(srcUserId)
+                        .setSrcWalletId(srcWalletId)
+                        .setDstWalletId(dstWalletId)
+                        .setValue(amount)
+                        .build()
+                ).build();
+		return broadcast(transaction);
+	}
+
 
 	public Transaction deliverTransaction(int next_transaction){
 		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
