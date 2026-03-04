@@ -44,6 +44,7 @@ public class NodeState {
         InternalResponseStatus argsInternalResponseStatus = checkCreateWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
+
         Transaction transaction = Transaction.newBuilder()
         .setCreateWallet(
             CreateWalletRequest.newBuilder()
@@ -51,9 +52,8 @@ public class NodeState {
             .setWalletId(walletId)
             .build()
         ).build();
-        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+        int target_transaction = sequencer.broadcast(transaction);
 
         pullTransactions(target_transaction);
         
@@ -74,9 +74,8 @@ public class NodeState {
                         .setWalletId(walletId)
                         .build()
                 ).build();
-        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+        int target_transaction = sequencer.broadcast(transaction);
 
         pullTransactions(target_transaction);
 
@@ -99,9 +98,8 @@ public class NodeState {
                         .setValue(amount)
                         .build()
                 ).build();
-        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-        int target_transaction = sequencer.broadcast(request).getSequenceNumber();
+        int target_transaction = sequencer.broadcast(transaction);
 
         pullTransactions(target_transaction);
 
@@ -131,9 +129,8 @@ public class NodeState {
         while(local_transaction_counter < target_transaction){
             
             int next_transaction = local_transaction_counter + 1;
-            DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
             
-            Transaction transaction = sequencer.deliverTransaction(request).getTransaction();
+            Transaction transaction = sequencer.deliverTransaction(next_transaction).getTransaction();
             
             executeTransaction(transaction);
             

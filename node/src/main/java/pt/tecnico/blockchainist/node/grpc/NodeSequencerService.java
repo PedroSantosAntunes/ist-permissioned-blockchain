@@ -11,36 +11,27 @@ public class NodeSequencerService {
 	final ManagedChannel channel;
 	private SequencerServiceGrpc.SequencerServiceBlockingStub stub;
 
-
 	public NodeSequencerService(String host, int port) {
-
         final String target = host + ":" + port;
 
-
-		// Channel is the abstraction to connect to a service endpoint.
-		// Let us use plaintext communication because we do not have certificates.
 		this.channel  = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
 		this.stub = SequencerServiceGrpc.newBlockingStub(channel);
-		
     }
 
+	public int broadcast(Transaction transaction){		
+        BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-	public BroadcastResponse broadcast(BroadcastRequest request){
 		Debug.log("Sent broadcast request to sequencer!\n" + request);
-		return stub.broadcast(request);
+		return stub.broadcast(request).getSequenceNumber();
 	}
 
-	public DeliverTransactionResponse deliverTransaction(DeliverTransactionRequest request){
+	public DeliverTransactionResponse deliverTransaction(int next_transaction){
+		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
+		
 		Debug.log("Sent deliver transaction request to sequencer!\n" + request);
 		return stub.deliverTransaction(request);
 	}
-
-
-	public SequencerServiceGrpc.SequencerServiceBlockingStub getStub(){
-		return this.stub;
-	}
-
 
 	public void closeChannel(){
 		channel.shutdownNow();
