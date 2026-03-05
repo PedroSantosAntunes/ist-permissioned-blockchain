@@ -4,6 +4,8 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.debug.Debug;
+
 import java.util.List;
 
 public class ClientNodeService {
@@ -31,6 +33,9 @@ public class ClientNodeService {
 			.setUserId(userId)
 			.setWalletId(walletId)
 			.build();
+
+		Debug.log("\n-----\nClient: Sending create wallet request!\n" + request);
+
 		stub.createWallet(request);
 	}
 
@@ -39,6 +44,9 @@ public class ClientNodeService {
 			.setUserId(userId)
 			.setWalletId(walletId)
 			.build();
+
+		Debug.log("\n-----\nClient: Sending delete wallet request!\n" + request);
+
 		stub.deleteWallet(request);
 	}
 
@@ -46,6 +54,9 @@ public class ClientNodeService {
 		ReadBalanceRequest request = ReadBalanceRequest.newBuilder()
 			.setWalletId(walletId)
 			.build();
+
+		Debug.log("\n-----\nClient: Sending read balance request!\n" + request);
+
 		ReadBalanceResponse response = stub.readBalance(request);
 		return response.getBalance();
 	}
@@ -57,12 +68,19 @@ public class ClientNodeService {
 			.setDstWalletId(dstWalletId)
 			.setValue(value)
 			.build();
+
+		Debug.log("\n-----\nClient: Sending transfer request!\n" + request);
+
 		stub.transfer(request);
 	}
 
 	public List<Transaction> getBlockchainState(){
 		GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
+
+		Debug.log("\n-----\nClient: Sending blockchain state request!\n" + request);
+
 		GetBlockchainStateResponse response = stub.getBlockchainState(request);
+		
 		//TODO: isto vai devolver uma lista de transaction. Mudar para Transaction de outro tipo?
 		return response.getTransactionsList();
 	}

@@ -24,7 +24,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        Debug.log("Create wallet request received!\n\tUserID: " + userId + "\n\tWalletID: " + walletId);
+        Debug.log("\n-----\nNode: Create wallet request received!\n" + request);
 
         InternalResponseStatus result = state.createWallet(userId, walletId);  
         if(!handleError(result, responseObserver)) {
@@ -40,7 +40,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
-        Debug.log("Delete wallet request received!\n\tUserID: " + userId + "\n\tWalletID: " + walletId);
+        Debug.log("\n-----\nNode: Delete wallet request received!\n" + request);
 
         InternalResponseStatus result = state.deleteWallet(userId, walletId);
         if(!handleError(result, responseObserver)) {
@@ -55,7 +55,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         
         String walletId = request.getWalletId();
 
-        Debug.log("Read balance request received!\n\tWalletID: " + walletId);
+        Debug.log("\n-----\nNode: Read balance request received!\n" + request);
 
         long balance = state.readBalance(walletId);
         if (balance == -1L) {
@@ -76,10 +76,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         String dstWalletId = request.getDstWalletId();
         Long amount = request.getValue();
 
-        Debug.log("Transfer currency request received!\n\tSourceUserID: " + srcUserId + " SourceWalletID: " + srcWalletId +
-            "\n\tDestWalletID: " + dstWalletId +
-            "\n\tAmount: " + amount
-        );
+        Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
 
         InternalResponseStatus result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
         if(!handleError(result, responseObserver)) {
@@ -92,7 +89,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void getBlockchainState(GetBlockchainStateRequest request, StreamObserver<GetBlockchainStateResponse> responseObserver){
         
-		Debug.log("Get blockchain state request received!");
+		Debug.log("\n-----\nNode: Get blockchain state request received!\n" + request);
 
         ArrayList<Transaction> transactions = state.getBlockchainState();
 

@@ -47,8 +47,6 @@ public class NodeState {
         int target_transaction = sequencer.broadcastCreateWallet(userId, walletId);
         pullTransactions(target_transaction);
         
-        Debug.log("Wallet created!\nWallets:\n" + wallets.values());
-
         return InternalResponseStatus.OK;
     }
 
@@ -59,8 +57,6 @@ public class NodeState {
         
         int target_transaction = sequencer.broadcastDeleteWallet(userId, walletId);
         pullTransactions(target_transaction);
-
-        Debug.log("Wallet deleted!\nWallets:\n" + wallets.values());
 
         return InternalResponseStatus.OK;
     }
@@ -73,8 +69,6 @@ public class NodeState {
         int target_transaction = sequencer.broadcastTransfer(srcUserId, srcWalletId, dstWalletId, amount);
         pullTransactions(target_transaction);
 
-        Debug.log("Currency transfered!\nWallets:\n" + wallets.values());
-
         return InternalResponseStatus.OK;
     }
 
@@ -83,10 +77,8 @@ public class NodeState {
         Wallet wallet = wallets.getOrDefault(walletId, null);
         if (wallet == null){ return -1L; }
 
-        Debug.log("Current balance: " + wallet.getBalance());
         return wallet.getBalance();  
     }
-
 
     public ArrayList<Transaction> getBlockchainState(){  		
         return transactions;
@@ -105,7 +97,7 @@ public class NodeState {
             executeTransaction(transaction);
             
             transactions.add(transaction);
-
+            //TODO acho que se tem que incrementar antes de por (problema de concorrencia)
             local_transaction_counter++;
         }
     }
@@ -113,18 +105,21 @@ public class NodeState {
     private void executeTransaction(Transaction transaction) {
         switch (transaction.getOperationCase()) {
             case CREATE_WALLET:
+                //TODO
                 CreateWalletRequest createReq = transaction.getCreateWallet();
                 wallets.put(createReq.getWalletId(), new Wallet(createReq.getWalletId(), createReq.getUserId(), 0L));
                 Debug.log("Wallet created: " + createReq.getWalletId());
                 break;
                 
             case DELETE_WALLET:
+                //TODO
                 DeleteWalletRequest deleteReq = transaction.getDeleteWallet();
                 wallets.remove(deleteReq.getWalletId());
                 Debug.log("Wallet deleted: " + deleteReq.getWalletId());
                 break;
                 
             case TRANSFER:
+                //TODO
                 TransferRequest transferReq = transaction.getTransfer();
                 Wallet srcWallet = wallets.get(transferReq.getSrcWalletId());
                 Wallet dstWallet = wallets.get(transferReq.getDstWalletId());

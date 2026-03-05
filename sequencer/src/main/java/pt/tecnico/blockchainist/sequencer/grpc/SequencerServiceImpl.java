@@ -23,7 +23,7 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
 
         Transaction transaction = request.getTransaction();
 
-        Debug.log("Broadcast request received!\n"+ transaction);
+        Debug.log("\n-----\nSequencer: Broadcast request received!\n" + request);
         
         int sequence_number = state.Broadcast(transaction);
 
@@ -40,11 +40,11 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
      * @param responseObserver
      */
     @Override
-    public void deliverTransaction(DeliverTransactionRequest resquest, StreamObserver<DeliverTransactionResponse> responseObserver){
+    public void deliverTransaction(DeliverTransactionRequest request, StreamObserver<DeliverTransactionResponse> responseObserver){
 
-        int sequence_number = resquest.getSequenceNumber();
+        int sequence_number = request.getSequenceNumber();
 
-        Debug.log("Deliver transaction request received!\n\tSequence number: " + sequence_number);
+        Debug.log("\n-----\nSequencer: Deliver transaction request received!\n" + request);
 
         Transaction transaction = state.DeliverTransaction(sequence_number);
 

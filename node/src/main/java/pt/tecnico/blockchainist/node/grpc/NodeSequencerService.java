@@ -22,7 +22,8 @@ public class NodeSequencerService {
 	private int broadcast(Transaction transaction){		
         BroadcastRequest request = BroadcastRequest.newBuilder().setTransaction(transaction).build();
 
-		Debug.log("Sent broadcast request to sequencer!\n" + request);
+		Debug.log("Sending broadcast request to sequencer!\n" + request);
+
 		return stub.broadcast(request).getSequenceNumber();
 	}
 
@@ -35,6 +36,7 @@ public class NodeSequencerService {
             .setWalletId(walletId)
             .build()
         ).build();
+
 		return broadcast(transaction);
 	}
 
@@ -46,6 +48,7 @@ public class NodeSequencerService {
                         .setWalletId(walletId)
                         .build()
                 ).build();
+
 		return broadcast(transaction);
 	}
 
@@ -59,6 +62,7 @@ public class NodeSequencerService {
                         .setValue(amount)
                         .build()
                 ).build();
+
 		return broadcast(transaction);
 	}
 
@@ -66,7 +70,8 @@ public class NodeSequencerService {
 	public Transaction deliverTransaction(int next_transaction){
 		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
 		
-		Debug.log("Sent deliver transaction request to sequencer!\n" + request);
+		Debug.log("Sending deliver transaction request to sequencer!\n" + request);
+		
 		return stub.deliverTransaction(request).getTransaction();
 	}
 
