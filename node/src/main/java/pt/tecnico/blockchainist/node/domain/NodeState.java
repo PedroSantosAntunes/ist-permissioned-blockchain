@@ -9,10 +9,9 @@ import java.util.regex.Pattern;
 import com.google.protobuf.Internal;
 
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
-
-import pt.tecnico.blockchainist.error.InternalResponseStatus;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
+import pt.tecnico.blockchainist.status.InternalResponseStatus;
 
 public class NodeState {
     

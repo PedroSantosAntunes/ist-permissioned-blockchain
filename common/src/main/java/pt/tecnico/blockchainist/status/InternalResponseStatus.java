@@ -1,4 +1,4 @@
-package pt.tecnico.blockchainist.error;
+package pt.tecnico.blockchainist.status;
 
 public enum InternalResponseStatus {
     

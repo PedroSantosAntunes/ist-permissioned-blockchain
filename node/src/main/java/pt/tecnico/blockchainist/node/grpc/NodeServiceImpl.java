@@ -4,6 +4,7 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.record.*;
+import pt.tecnico.blockchainist.status.InternalResponseStatus;
 import pt.tecnico.blockchainist.grpc.*;
 
 import static io.grpc.Status.*;
@@ -11,7 +12,6 @@ import static io.grpc.Status.*;
 import java.util.ArrayList;
 
 import pt.tecnico.blockchainist.debug.Debug;
-import pt.tecnico.blockchainist.error.InternalResponseStatus;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     private final NodeState state;
