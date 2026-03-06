@@ -41,6 +41,6 @@ public class SequencerState {
     }
 
     private synchronized TransactionRecord getTransaction(int sequence_number){
-        return transactions.get(sequence_number-1);
+        return transactions.get(sequence_number - 1);
     }
 }

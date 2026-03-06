@@ -53,3 +53,31 @@ mvn clean install
 
 * [Maven](https://maven.apache.org/) - Build and dependency management tool;
 * [gRPC](https://grpc.io/) - RPC framework.
+
+
+## How to Run
+Compile in the root directory:  
+```s
+mvn clean install
+```
+
+Open directory /sequencer and run:
+```s
+mvn exec:java
+```
+
+On another terminal open /node and run:
+```s
+mvn exec:java
+```
+
+Finally
+ - either open /client on another terminal and run:
+    ```s
+    mvn exec:java
+    ```
+
+ - Or open /tests on another terminal and run:
+    ```s
+    ./run_tests.sh
+    ```

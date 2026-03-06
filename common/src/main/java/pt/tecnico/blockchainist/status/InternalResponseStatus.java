@@ -12,7 +12,6 @@ public enum InternalResponseStatus {
     REMAINING_BALANCE,
     INSUFFICIENT_BALANCE,
     NEGATIVE_AMOUNT,
-    DONE_PULLING,
     UNKNOWN;
 
 }
