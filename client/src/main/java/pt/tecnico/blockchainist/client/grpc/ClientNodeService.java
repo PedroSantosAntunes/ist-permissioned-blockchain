@@ -2,11 +2,8 @@ package pt.tecnico.blockchainist.client.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
-
-import java.util.List;
 
 public class ClientNodeService {
 
@@ -16,12 +13,9 @@ public class ClientNodeService {
 
 
 	public ClientNodeService(String host, int port, String organization) {
-        // TODO: create channel/stub
 
         final String target = host + ":" + port;
 
-		// Channel is the abstraction to connect to a service endpoint.
-		// Let us use plaintext communication because we do not have certificates.
 		this.channel  = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
 		this.stub = NodeServiceGrpc.newBlockingStub(channel);

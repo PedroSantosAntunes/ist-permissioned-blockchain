@@ -10,7 +10,6 @@
 	<packaging>jar</packaging>
 	<name>${project.artifactId}</name>
 
-	<!-- TODO (a partir daqui) -->
 	<parent>
 		<groupId>pt.tecnico.sdis.2026.T46</groupId>
 		<artifactId>blockchain-ist</artifactId>

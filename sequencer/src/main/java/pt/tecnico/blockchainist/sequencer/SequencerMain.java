@@ -39,7 +39,7 @@ public class SequencerMain {
 
         final BindableService impl = new SequencerServiceImpl(state);
 
-        Server server = ServerBuilder.forPort(port).addService(impl).build(); // TODO: ADD SERVICE
+        Server server = ServerBuilder.forPort(port).addService(impl).build();
         server.start();
         Debug.log("Sequencer started");
         server.awaitTermination();

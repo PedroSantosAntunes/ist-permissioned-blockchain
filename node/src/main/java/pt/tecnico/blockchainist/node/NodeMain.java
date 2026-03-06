@@ -13,7 +13,6 @@ import java.io.IOException;
 
 public class NodeMain {
     public static void main(String[] args)  throws IOException, InterruptedException {
-        // TODO
 
         System.out.println(NodeMain.class.getSimpleName());
         Debug.log("Debug is ON");
@@ -81,9 +80,7 @@ public class NodeMain {
         server.start();
         Debug.log("Node started");
         server.awaitTermination();
-        sequencer.closeChannel(); 
-        // TODO: check if nothing more needs to be closed
-        
+        sequencer.closeChannel();
     }
 
     private static void printUsage() {
