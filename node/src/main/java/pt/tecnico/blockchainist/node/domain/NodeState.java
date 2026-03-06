@@ -55,7 +55,7 @@ public class NodeState {
 
     public InternalResponseStatus transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
 
-        InternalResponseStatus argsInternalResponseStatus = validateTranferArgs(srcUserId, srcWalletId, dstWalletId, amount);
+        InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
         int target_transaction = sequencer.broadcastTransfer(srcUserId, srcWalletId, dstWalletId, amount);
@@ -97,7 +97,7 @@ public class NodeState {
 				transactions.add(record);
 				local_transaction_counter++;
 
-                if (record.getSequenceNumber() == target && status != InternalResponseStatus.OK){
+                if (record.getSequenceNumber() == target){
                     return status;
                 }
 
@@ -128,7 +128,7 @@ public class NodeState {
             case TRANSFER:
                 TransferRecord transferRecord = (TransferRecord) record;
                 
-                argsInternalResponseStatus = canTranfer(transferRecord.getSrcUserId(), transferRecord.getSrcWalletId(), transferRecord.getDstWalletId(), transferRecord.getAmount());
+                argsInternalResponseStatus = canTransfer(transferRecord.getSrcUserId(), transferRecord.getSrcWalletId(), transferRecord.getDstWalletId(), transferRecord.getAmount());
                 if (argsInternalResponseStatus != InternalResponseStatus.OK) return argsInternalResponseStatus; 
 
                 Wallet srcWallet = wallets.get(transferRecord.getSrcWalletId());
@@ -203,7 +203,7 @@ public class NodeState {
         return InternalResponseStatus.OK;
     }
 
-    private InternalResponseStatus validateTranferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    private InternalResponseStatus validateTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         if (srcUserId == null || !validFormat(srcUserId)) {
                 System.err.println("Bad user id: " + srcUserId);
                 return InternalResponseStatus.BAD_USER_FORMAT;
@@ -223,7 +223,7 @@ public class NodeState {
         return InternalResponseStatus.OK;
     }
 
-    private InternalResponseStatus canTranfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    private InternalResponseStatus canTransfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         if (!walletExists(srcWalletId)){ 
             System.err.println("Wallet id does not exist: " + srcWalletId);
             return InternalResponseStatus.WALLET_NOT_FOUND; 
@@ -247,7 +247,7 @@ public class NodeState {
 
 
     private boolean validFormat(String input) {
-        if (!ID_PATTERN.matcher(input).matches() || input.isBlank()) {
+        if (input == null || !ID_PATTERN.matcher(input).matches() || input.isBlank()) {
             return false;
         }
         return true;
@@ -268,7 +268,8 @@ public class NodeState {
 
     // Checks if the wallet belongs to the user
     private boolean isAuthorized(String walletId, String userId) {
-        return wallets.get(walletId).getUserId().equals(userId);
+		Wallet wallet = wallets.get(walletId);
+        return wallet != null && wallet.getUserId().equals(userId);
     }
 
     private boolean hasEnoughBalance(long balanceSrc, long amount){
