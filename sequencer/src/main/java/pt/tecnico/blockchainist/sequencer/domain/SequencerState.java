@@ -1,12 +1,12 @@
 package pt.tecnico.blockchainist.sequencer.domain;
 
 import java.util.ArrayList;
-import pt.tecnico.blockchainist.contract.Transaction;
 import pt.tecnico.blockchainist.debug.Debug;
+import pt.tecnico.blockchainist.record.*;
 
 public class SequencerState {
 
-    private final ArrayList<Transaction> transactions = new ArrayList<Transaction>();
+    private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
     int global_transaction_counter = 0;
 
     public SequencerState(){
@@ -17,9 +17,10 @@ public class SequencerState {
      * @param tx
      * @return
      */
-    public synchronized int Broadcast(Transaction transaction){
+    public synchronized int Broadcast(TransactionRecord transaction){
 
         global_transaction_counter++;
+        transaction.setSequenceNumber(global_transaction_counter);
         transactions.add(transaction);
 
         Debug.log("Transaction added to transactions:\n" + transaction);
@@ -32,15 +33,15 @@ public class SequencerState {
      * @param sequence_number
      * @return
      */
-    public synchronized Transaction DeliverTransaction(int sequence_number){
+    public synchronized TransactionRecord DeliverTransaction(int sequence_number){
 
-        Transaction transaction = getTransaction(sequence_number);
+        TransactionRecord transaction = getTransaction(sequence_number);
 
         Debug.log("Delivering transaction to node:\n" + transaction);
         return transaction;
     }
 
-    private synchronized Transaction getTransaction(int sequence_number){
+    private synchronized TransactionRecord getTransaction(int sequence_number){
         return transactions.get(sequence_number-1);
     }
 }

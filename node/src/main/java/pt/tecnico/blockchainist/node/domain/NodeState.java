@@ -155,10 +155,6 @@ public class NodeState {
         }
     }
 
-
-
-
-
     private InternalResponseStatus checkCreateWalletArgs(String userId, String walletId) {
         if (userId == null || !validFormat(userId)) {
             System.err.println("Bad user id: " + userId);

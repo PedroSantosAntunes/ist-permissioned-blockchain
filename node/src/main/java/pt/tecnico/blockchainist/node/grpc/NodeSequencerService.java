@@ -74,7 +74,10 @@ public class NodeSequencerService {
 		Debug.log("Sending deliver transaction request to sequencer!\n" + request);
 		Transaction transaction = stub.deliverTransaction(request).getTransaction();
 
-		return TransactionToRecord.transactionToRecord(transaction, next_transaction);
+		TransactionRecord record = TransactionToRecord.transactionToRecord(transaction);
+		record.setSequenceNumber(next_transaction);
+
+		return record;
 	}
 
 	public void closeChannel(){

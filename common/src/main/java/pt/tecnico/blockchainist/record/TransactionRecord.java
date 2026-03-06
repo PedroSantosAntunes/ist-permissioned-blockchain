@@ -9,14 +9,17 @@ public abstract class TransactionRecord {
         TRANSFER
     }
 
-    private int sequence_number;
+    private int sequence_number = -1;
 
-    public TransactionRecord(int sequence_number){
-        this.sequence_number = sequence_number;
+    public TransactionRecord(){
     }
 
     public int getSequenceNumber() {
         return this.sequence_number;
+    }
+
+    public void setSequenceNumber(int sequence_number){
+        this.sequence_number = sequence_number;
     }
 
     public abstract TransactionType getType();

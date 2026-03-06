@@ -1,16 +1,13 @@
 package pt.tecnico.blockchainist.client;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
-import pt.tecnico.blockchainist.contract.Transaction;
 
-import pt.tecnico.blockchainist.debug.Debug;
 
 public class CommandProcessor {
 

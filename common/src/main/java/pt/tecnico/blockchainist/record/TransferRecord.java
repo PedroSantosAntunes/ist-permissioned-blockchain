@@ -8,8 +8,7 @@ public class TransferRecord extends TransactionRecord {
     private String dstWalletId;
     private long amount;
 
-    public TransferRecord(int sequence_number, String srcUserId, String srcWalletId, String dstWalletId, long amount){
-        super(sequence_number);
+    public TransferRecord(String srcUserId, String srcWalletId, String dstWalletId, long amount){
         this.srcUserId = srcUserId;
         this.srcWalletId = srcWalletId;
         this.dstWalletId = dstWalletId;

@@ -4,6 +4,8 @@ package pt.tecnico.blockchainist.sequencer.grpc;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
+import pt.tecnico.blockchainist.grpc.RecordToTransaction;
+import pt.tecnico.blockchainist.grpc.TransactionToRecord;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 import pt.tecnico.blockchainist.record.*;
 
@@ -26,7 +28,9 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
 
         Debug.log("\n-----\nSequencer: Broadcast request received!\n" + request);
         
-        int sequence_number = state.Broadcast(transaction);
+        TransactionRecord record =  TransactionToRecord.transactionToRecord(transaction);
+
+        int sequence_number = state.Broadcast(record);
 
         BroadcastResponse response = BroadcastResponse.newBuilder().setSequenceNumber(sequence_number).build();
 
@@ -47,7 +51,8 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
 
         Debug.log("\n-----\nSequencer: Deliver transaction request received!\n" + request);
 
-        Transaction transaction = state.DeliverTransaction(sequence_number);
+        TransactionRecord record = state.DeliverTransaction(sequence_number);
+        Transaction transaction = RecordToTransaction.recordToTransaction(record);
 
         DeliverTransactionResponse response = DeliverTransactionResponse.newBuilder().setTransaction(transaction).build();
 

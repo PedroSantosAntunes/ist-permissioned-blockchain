@@ -6,14 +6,13 @@ import pt.tecnico.blockchainist.contract.*;
 
 public abstract class TransactionToRecord {
 
-    public static TransactionRecord transactionToRecord(Transaction tx, int globalTransactionCounter) {
+    public static TransactionRecord transactionToRecord(Transaction tx) {
 
         switch (tx.getOperationCase()) {
 
             case CREATE_WALLET:
                 CreateWalletRequest create = tx.getCreateWallet();
                 return new CreateWalletRecord(
-                        globalTransactionCounter,
                         create.getUserId(),
                         create.getWalletId()
                 );
@@ -21,7 +20,6 @@ public abstract class TransactionToRecord {
             case DELETE_WALLET:
                 DeleteWalletRequest delete = tx.getDeleteWallet();
                 return new DeleteWalletRecord(
-                        globalTransactionCounter,
                         delete.getUserId(),
                         delete.getWalletId()
                 );
@@ -29,7 +27,6 @@ public abstract class TransactionToRecord {
             case TRANSFER:
                 TransferRequest transfer = tx.getTransfer();
                 return new TransferRecord(
-                        globalTransactionCounter,
                         transfer.getSrcUserId(),
                         transfer.getSrcWalletId(),
                         transfer.getDstWalletId(),
