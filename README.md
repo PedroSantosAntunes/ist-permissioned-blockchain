@@ -81,3 +81,18 @@ Finally
     ```s
     ./run_tests.sh
     ```
+
+
+## Debug
+
+An extra argument can be used to run on Debug (`-Ddebug=1`) mode that adds extra information.
+```s
+mvn -Ddebug=1 exec:java
+```
+
+## Arguments
+
+Pass runtime arguments with `-Dexec.args`, for example on the sequencer.
+```s
+mvn exec:java -Dexec.args="5000"
+```
