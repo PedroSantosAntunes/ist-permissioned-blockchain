@@ -34,8 +34,10 @@ public abstract class TransactionToRecord {
                 );
 
             case OPERATION_NOT_SET:
-            default:
                 throw new IllegalArgumentException("Transaction operation not set");
+            
+            default:
+                throw new IllegalArgumentException("Transaction operation error");
         }
     }
 

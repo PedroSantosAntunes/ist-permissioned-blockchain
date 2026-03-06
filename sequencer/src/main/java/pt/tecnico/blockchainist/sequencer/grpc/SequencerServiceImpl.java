@@ -62,10 +62,4 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         responseObserver.onCompleted();
     };
 
-
-
-    
-
-
-
 }
