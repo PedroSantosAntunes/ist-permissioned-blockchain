@@ -121,9 +121,9 @@ public class CommandProcessor {
 
         try {
             node.createWallet(userId, walletId);
-            displayOperationResult(commandNumber, "OK", false);
+            displaySuccessfulOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
-            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+            displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
 
     }
@@ -146,9 +146,9 @@ public class CommandProcessor {
 
         try {
             node.deleteWallet(userId, walletId);
-            displayOperationResult(commandNumber, "OK", false);
+            displaySuccessfulOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
-            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+            displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
 
     }
@@ -170,10 +170,10 @@ public class CommandProcessor {
 
         try{
             long balance = node.readBalance(walletId);
-            displayOperationResult(commandNumber, "OK", false);
+            displaySuccessfulOperation(commandNumber, "OK");
             System.out.println(balance);
         } catch (StatusRuntimeException e) {
-            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+            displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
 
     }
@@ -198,9 +198,9 @@ public class CommandProcessor {
         
         try{
             node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount);
-            displayOperationResult(commandNumber, "OK", false);
+            displaySuccessfulOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
-            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+            displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
     }
 
@@ -218,16 +218,11 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
         
         try{
-            List<Transaction> transactions = node.getBlockchainState();
-            
-            displayOperationResult(commandNumber, "OK", false);
-            
-            for(Transaction tx : transactions) {
-                System.out.println(tx);
-            }
-
+            String transactions = node.getBlockchainState();
+            displaySuccessfulOperation(commandNumber, "OK");
+            System.out.println(transactions);
         } catch (StatusRuntimeException e) {
-            displayOperationResult(commandNumber, e.getStatus().getDescription(), true);
+            displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
 
     }
@@ -399,17 +394,11 @@ public class CommandProcessor {
                 "- X\n");
     }
 
-    /**
-     * Display function for standard out or err out
-     * @param commandNumber
-     * @param statusMessage
-     * @param err true if the content is to be displayed on err out
-     */
-    private static void displayOperationResult(Long commandNumber, String statusMessage, boolean err) {
-        if(err){
-            System.err.println(statusMessage + " " + commandNumber);
-        } else {
-            System.out.println(statusMessage + " " + commandNumber);
-        }
+    private static void displaySuccessfulOperation(Long commandNumber, String statusMessage) {
+        System.out.println(statusMessage + " " + commandNumber);
+    }
+
+    private static void displayErrorOperation(Long commandNumber, String statusMessage) {
+        System.err.println(statusMessage + " " + commandNumber);
     }
 }

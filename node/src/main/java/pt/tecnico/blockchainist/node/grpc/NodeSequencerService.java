@@ -3,7 +3,8 @@ package pt.tecnico.blockchainist.node.grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.tecnico.blockchainist.contract.*;
-
+import pt.tecnico.blockchainist.grpc.TransactionToRecord;
+import pt.tecnico.blockchainist.record.TransactionRecord;
 import pt.tecnico.blockchainist.debug.Debug;
 
 public class NodeSequencerService {
@@ -67,12 +68,13 @@ public class NodeSequencerService {
 	}
 
 
-	public Transaction deliverTransaction(int next_transaction){
+	public TransactionRecord deliverTransaction(int next_transaction){
 		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
 		
 		Debug.log("Sending deliver transaction request to sequencer!\n" + request);
-		
-		return stub.deliverTransaction(request).getTransaction();
+		Transaction transaction = stub.deliverTransaction(request).getTransaction();
+
+		return TransactionToRecord.transactionToRecord(transaction, next_transaction);
 	}
 
 	public void closeChannel(){

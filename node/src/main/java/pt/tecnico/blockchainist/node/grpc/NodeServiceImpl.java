@@ -1,15 +1,17 @@
 package pt.tecnico.blockchainist.node.grpc;
 
-
-import pt.tecnico.blockchainist.contract.*;
-import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
+import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.record.*;
+import pt.tecnico.blockchainist.grpc.*;
 
 import static io.grpc.Status.*;
 
 import java.util.ArrayList;
 
+import pt.tecnico.blockchainist.debug.Debug;
+import pt.tecnico.blockchainist.error.InternalResponseStatus;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     private final NodeState state;
@@ -27,7 +29,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Create wallet request received!\n" + request);
 
         InternalResponseStatus result = state.createWallet(userId, walletId);  
-        if(!handleError(result, responseObserver)) {
+        if(!isError(result, responseObserver)) {
             CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -43,7 +45,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Delete wallet request received!\n" + request);
 
         InternalResponseStatus result = state.deleteWallet(userId, walletId);
-        if(!handleError(result, responseObserver)) {
+        if(!isError(result, responseObserver)) {
             DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -79,7 +81,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
 
         InternalResponseStatus result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
-        if(!handleError(result, responseObserver)) {
+        if(!isError(result, responseObserver)) {
             TransferResponse response = TransferResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -91,11 +93,13 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         
 		Debug.log("\n-----\nNode: Get blockchain state request received!\n" + request);
 
-        ArrayList<Transaction> transactions = state.getBlockchainState();
+        ArrayList<TransactionRecord> records = state.getBlockchainState();
 
         GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();
 
-        for (Transaction tx : transactions) {
+        for (TransactionRecord record : records) {
+            Transaction tx = RecordToTransaction.recordToTransaction(record);
+            if(tx == null) continue;
             builder.addTransactions(tx);
         }
 
@@ -105,7 +109,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     }
 
 
-    private boolean handleError(InternalResponseStatus status, StreamObserver<?> responseObserver) {
+    private boolean isError(InternalResponseStatus status, StreamObserver<?> responseObserver) {
         if (status == InternalResponseStatus.OK) {
             return false;
         }

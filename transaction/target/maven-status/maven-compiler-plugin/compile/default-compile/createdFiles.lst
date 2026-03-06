@@ -1,6 +1,0 @@
-pt/tecnico/blockchainist/transaction/domain/TransactionRecord$1.class
-pt/tecnico/blockchainist/transaction/domain/DeleteWalletTransaction.class
-pt/tecnico/blockchainist/transaction/domain/CreateWalletTransaction.class
-pt/tecnico/blockchainist/transaction/domain/TransferTransaction.class
-pt/tecnico/blockchainist/transaction/domain/TransactionRecord.class
-pt/tecnico/blockchainist/transaction/domain/TransactionVisitor.class

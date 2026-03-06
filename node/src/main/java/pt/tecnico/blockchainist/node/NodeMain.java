@@ -12,7 +12,7 @@ import pt.tecnico.blockchainist.debug.Debug;
 import java.io.IOException;
 
 public class NodeMain {
-    public static void main(String[] args) {
+    public static void main(String[] args)  throws IOException, InterruptedException {
         // TODO
 
         System.out.println(NodeMain.class.getSimpleName());
@@ -78,16 +78,11 @@ public class NodeMain {
 
         Server server = ServerBuilder.forPort(nodePort).addService(impl).build();
         
-        try {
-            server.start();
-		    Debug.log("Node started");
-            server.awaitTermination();
-            sequencer.closeChannel();
-        } catch (IOException e) {
-            // TODO
-        } catch (InterruptedException e) {
-            // TODO
-        }
+        server.start();
+        Debug.log("Node started");
+        server.awaitTermination();
+        sequencer.closeChannel(); 
+        // TODO: check if nothing more needs to be closed
         
     }
 

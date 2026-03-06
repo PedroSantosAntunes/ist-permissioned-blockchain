@@ -74,15 +74,14 @@ public class ClientNodeService {
 		stub.transfer(request);
 	}
 
-	public List<Transaction> getBlockchainState(){
+	public String getBlockchainState(){
 		GetBlockchainStateRequest request = GetBlockchainStateRequest.getDefaultInstance();
 
 		Debug.log("\n-----\nClient: Sending blockchain state request!\n" + request);
 
 		GetBlockchainStateResponse response = stub.getBlockchainState(request);
 		
-		//TODO: isto vai devolver uma lista de transaction. Mudar para Transaction de outro tipo?
-		return response.getTransactionsList();
+		return response.toString();
 	}
 
 	public String getOrganization(){

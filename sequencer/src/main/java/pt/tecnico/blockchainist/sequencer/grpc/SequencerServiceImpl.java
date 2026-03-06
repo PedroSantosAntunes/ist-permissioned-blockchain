@@ -5,6 +5,7 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
+import pt.tecnico.blockchainist.record.*;
 
 public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceImplBase{
     private final SequencerState state;
@@ -53,5 +54,11 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     };
+
+
+
+    
+
+
 
 }
