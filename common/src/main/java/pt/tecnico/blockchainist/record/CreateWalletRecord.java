@@ -21,5 +21,14 @@ public class CreateWalletRecord extends TransactionRecord {
     public TransactionType getType(){
         return TransactionType.CREATE_WALLET;
     }
+
+    @Override
+    public String toString() {
+        return "sequenceNumber: " + getSequenceNumber() + "\n"
+            + "createWallet {\n"
+            + "  userId: \"" + getUserId() + "\"\n"
+            + "  walletId: \"" + getWalletId() + "\"\n"
+            + "}";
+    }
 }
 

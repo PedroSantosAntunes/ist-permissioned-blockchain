@@ -35,4 +35,15 @@ public class TransferRecord extends TransactionRecord {
     public TransactionType getType(){
         return TransactionType.TRANSFER;
     }
+
+    @Override
+    public String toString() {
+        return "sequenceNumber: " + getSequenceNumber() + "\n"
+            + "transfer {\n"
+            + "  srcUserId: \"" + getSrcUserId() + "\"\n"
+            + "  srcWalletId: \"" + getSrcWalletId() + "\"\n"
+            + "  dstWalletId: \"" + getDstWalletId() + "\"\n"
+            + "  amount: " + getAmount() + "\n"
+            + "}";
+    }
 }

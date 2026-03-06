@@ -24,5 +24,8 @@ public abstract class TransactionRecord {
 
     public abstract TransactionType getType();
 
+	@Override
+	public abstract String toString();
+
 }
 

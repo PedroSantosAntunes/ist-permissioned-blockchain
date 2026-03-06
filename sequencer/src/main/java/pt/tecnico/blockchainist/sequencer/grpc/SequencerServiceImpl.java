@@ -54,6 +54,8 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         TransactionRecord record = state.DeliverTransaction(sequence_number);
         Transaction transaction = RecordToTransaction.recordToTransaction(record);
 
+        Debug.log("Delivering transaction to node:\n" + transaction);
+
         DeliverTransactionResponse response = DeliverTransactionResponse.newBuilder().setTransaction(transaction).build();
 
         responseObserver.onNext(response);

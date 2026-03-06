@@ -37,7 +37,6 @@ public class SequencerState {
 
         TransactionRecord transaction = getTransaction(sequence_number);
 
-        Debug.log("Delivering transaction to node:\n" + transaction);
         return transaction;
     }
 
