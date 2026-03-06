@@ -11,7 +11,9 @@ public enum InternalResponseStatus {
     NOT_AUTHORIZED,
     REMAINING_BALANCE,
     INSUFFICIENT_BALANCE,
-    NEGATIVE_AMOUNT;
+    NEGATIVE_AMOUNT,
+    DONE_PULLING,
+    UNKNOWN;
 
 }
 

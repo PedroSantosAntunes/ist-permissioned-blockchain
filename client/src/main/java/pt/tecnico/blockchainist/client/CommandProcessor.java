@@ -122,7 +122,6 @@ public class CommandProcessor {
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
-
     }
 
     /**
@@ -147,7 +146,6 @@ public class CommandProcessor {
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
-
     }
 
     /**
@@ -172,7 +170,6 @@ public class CommandProcessor {
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
-
     }
 
     /**
@@ -221,7 +218,6 @@ public class CommandProcessor {
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
-
     }
 
     private void pause(String[] split) {
