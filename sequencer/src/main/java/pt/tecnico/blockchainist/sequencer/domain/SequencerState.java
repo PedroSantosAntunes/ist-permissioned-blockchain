@@ -17,7 +17,7 @@ public class SequencerState {
      * @param tx
      * @return
      */
-    public synchronized int Broadcast(TransactionRecord transaction){
+    public synchronized int broadcast(TransactionRecord transaction){
 
         global_transaction_counter++;
         transaction.setSequenceNumber(global_transaction_counter);
@@ -33,7 +33,7 @@ public class SequencerState {
      * @param sequence_number
      * @return
      */
-    public synchronized TransactionRecord DeliverTransaction(int sequence_number){
+    public synchronized TransactionRecord deliverTransaction(int sequence_number){
 
         TransactionRecord transaction = getTransaction(sequence_number);
 

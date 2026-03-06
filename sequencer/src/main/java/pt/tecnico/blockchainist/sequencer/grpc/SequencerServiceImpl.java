@@ -30,7 +30,7 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         
         TransactionRecord record =  TransactionToRecord.transactionToRecord(transaction);
 
-        int sequence_number = state.Broadcast(record);
+        int sequence_number = state.broadcast(record);
 
         BroadcastResponse response = BroadcastResponse.newBuilder().setSequenceNumber(sequence_number).build();
 
@@ -51,7 +51,7 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
 
         Debug.log("\n-----\nSequencer: Deliver transaction request received!\n" + request);
 
-        TransactionRecord record = state.DeliverTransaction(sequence_number);
+        TransactionRecord record = state.deliverTransaction(sequence_number);
         Transaction transaction = RecordToTransaction.recordToTransaction(record);
 
         Debug.log("Delivering transaction to node:\n" + transaction);
