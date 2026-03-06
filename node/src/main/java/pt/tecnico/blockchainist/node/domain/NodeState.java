@@ -6,8 +6,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.regex.Pattern;
 
-import com.google.protobuf.Internal;
-
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
@@ -19,7 +17,7 @@ public class NodeState {
     
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
     private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
-    int local_transaction_counter = 0;
+    private int local_transaction_counter = 0;
     
     private final Object stateLock = new Object();
 
@@ -96,14 +94,13 @@ public class NodeState {
 				if (local_transaction_counter >= record.getSequenceNumber()) continue;
 
 				InternalResponseStatus status = executeTransaction(record);
+				transactions.add(record);
+				local_transaction_counter++;
 
                 if (record.getSequenceNumber() == target && status != InternalResponseStatus.OK){
                     return status;
                 }
 
-				transactions.add(record);
-
-				local_transaction_counter++;
 			}
 		}
 	}
