@@ -20,7 +20,7 @@ public class NodeState {
     private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
     int local_transaction_counter = 0;
     
-    private final Object pullTransactionLock = new Object();
+    private final Object stateLock = new Object();
 
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
@@ -42,7 +42,7 @@ public class NodeState {
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         
         int target_transaction = sequencer.broadcastCreateWallet(userId, walletId);
-        pullTransactions(target_transaction);
+        pullMissingTransactions(target_transaction);
         
         return InternalResponseStatus.OK;
     }
@@ -53,7 +53,7 @@ public class NodeState {
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
         
         int target_transaction = sequencer.broadcastDeleteWallet(userId, walletId);
-        pullTransactions(target_transaction);
+        pullMissingTransactions(target_transaction);
 
         return InternalResponseStatus.OK;
     }
@@ -64,69 +64,49 @@ public class NodeState {
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
         int target_transaction = sequencer.broadcastTransfer(srcUserId, srcWalletId, dstWalletId, amount);
-        pullTransactions(target_transaction);
+        pullMissingTransactions(target_transaction);
 
         return InternalResponseStatus.OK;
     }
 
     public long readBalance(String walletId) {
         
-        Wallet wallet = wallets.getOrDefault(walletId, null);
-        if (wallet == null){ return -1L; }
+        synchronized (stateLock) {
+            Wallet wallet = wallets.getOrDefault(walletId, null);
+            if (wallet == null){ return -1L; }
+            return wallet.getBalance();
+        }
 
-        return wallet.getBalance();  
     }
 
-    public ArrayList<TransactionRecord> getBlockchainState(){  		
-        return transactions;
-    }
-
-    private void pullTransactions(int target_transaction){
-        // Send DeliverTransactionRequest's to sequencer until the local transaction counter is equal 
-        // to the transaction number from the BroadcastResponse
-        
-        while(local_transaction_counter < target_transaction){
-            
-            int next_transaction = local_transaction_counter + 1;
-            
-            TransactionRecord transaction = sequencer.deliverTransaction(next_transaction);
-            
-            executeTransaction(transaction);
-            
-            transactions.add(transaction);
-            //TODO acho que se tem que incrementar antes de por (problema de concorrencia)
-            local_transaction_counter++;
+    public ArrayList<TransactionRecord> getBlockchainState(){		
+        synchronized (stateLock) {
+            return new ArrayList<>(transactions);
         }
     }
 
+    public void pullMissingTransactions (int target) {
+		while (true) {
+			int next_transaction;
+			synchronized (stateLock) {
+				next_transaction = local_transaction_counter + 1;
+			}
 
+			if (next_transaction > target) return;
 
-    public void pullMissingTransactions(int target){
+			TransactionRecord record = sequencer.deliverTransaction(next_transaction);
 
-        while(true){
-            boolean done = pullNextTransaction(target);
-            if (done) break;
-        }
-    }
+			synchronized (stateLock) {
+				if (local_transaction_counter >= record.getSequenceNumber()) continue;
 
-    public boolean pullNextTransaction(int target){
-        synchronized(pullTransactionLock) {
+				executeTransaction((record));
 
-            int next_transaction = local_transaction_counter + 1;
-            
-            if(next_transaction > target) return true;
+				transactions.add(record);
 
-            TransactionRecord transaction = sequencer.deliverTransaction(next_transaction);
-
-            executeTransaction(transaction);
-
-            transactions.add(transaction);
-
-            local_transaction_counter++;
-
-            return false;
-        }
-    }
+				local_transaction_counter++;
+			}
+		}
+	}
 
 
 
