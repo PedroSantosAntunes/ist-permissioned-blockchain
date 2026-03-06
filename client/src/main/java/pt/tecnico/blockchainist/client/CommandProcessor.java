@@ -118,7 +118,7 @@ public class CommandProcessor {
 
         try {
             node.createWallet(userId, walletId);
-            displaySuccessfulOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
@@ -142,7 +142,7 @@ public class CommandProcessor {
 
         try {
             node.deleteWallet(userId, walletId);
-            displaySuccessfulOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
@@ -165,7 +165,7 @@ public class CommandProcessor {
 
         try{
             long balance = node.readBalance(walletId);
-            displaySuccessfulOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK");
             System.out.println(balance);
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
@@ -192,7 +192,7 @@ public class CommandProcessor {
         
         try{
             node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount);
-            displaySuccessfulOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
         }
@@ -213,7 +213,7 @@ public class CommandProcessor {
         
         try{
             String transactions = node.getBlockchainState();
-            displaySuccessfulOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK");
             System.out.println(transactions);
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
@@ -387,7 +387,7 @@ public class CommandProcessor {
                 "- X\n");
     }
 
-    private static void displaySuccessfulOperation(Long commandNumber, String statusMessage) {
+    private static void displaySuccessOperation(Long commandNumber, String statusMessage) {
         System.out.println(statusMessage + " " + commandNumber);
     }
 
