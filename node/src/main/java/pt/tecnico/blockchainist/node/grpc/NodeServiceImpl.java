@@ -4,12 +4,14 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.record.*;
+import pt.tecnico.blockchainist.block.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
 import pt.tecnico.blockchainist.grpc.*;
 
 import static io.grpc.Status.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import pt.tecnico.blockchainist.debug.Debug;
 
@@ -93,19 +95,23 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         
 		Debug.log("\n-----\nNode: Get blockchain state request received!\n" + request);
 
-        ArrayList<TransactionRecord> records = state.getBlockchainState();
+        ArrayList<BlockRecord> blocks = state.getBlockchainState();
 
         GetBlockchainStateResponse.Builder builder = GetBlockchainStateResponse.newBuilder();
 
-        for (TransactionRecord record : records) {
-            Transaction tx = RecordToTransaction.recordToTransaction(record);
-            if(tx == null) continue;
-            builder.addTransactions(tx);
+        for (BlockRecord blockRecord : blocks){
+            List<TransactionRecord> records = blockRecord.getTransactions();
+            
+            for (TransactionRecord record : records) {
+                Transaction tx = RecordToTransaction.recordToTransaction(record);
+                if(tx == null) continue;
+                builder.addTransactions(tx);
+            }
+            
+            GetBlockchainStateResponse response = builder.build();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
-
-        GetBlockchainStateResponse response = builder.build();
-        responseObserver.onNext(response);
-        responseObserver.onCompleted();
     }
 
 

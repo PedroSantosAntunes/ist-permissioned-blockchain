@@ -1,12 +1,14 @@
 package pt.tecnico.blockchainist.node.domain;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
+import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
@@ -16,8 +18,9 @@ public class NodeState {
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
-    private final ArrayList<TransactionRecord> transactions = new ArrayList<TransactionRecord>();
+    private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
     private int local_transaction_counter = 0;
+    private int local_block_counter = 0;
     
     private final Object stateLock = new Object();
 
@@ -73,10 +76,10 @@ public class NodeState {
 
     }
 
-    public ArrayList<TransactionRecord> getBlockchainState(){		
+    public ArrayList<BlockRecord> getBlockchainState(){		
         // Avoids reading the list of transaction while another thread is changing it
         synchronized (stateLock) {
-            return new ArrayList<>(transactions);
+            return new ArrayList<>(blocks);
         }
     }
 
@@ -96,39 +99,53 @@ public class NodeState {
      */
     public InternalResponseStatus pullMissingTransactions (int target) {
 		while (true) {
-			int next_transaction;
+			int next_block;
 			synchronized (stateLock) {
-				next_transaction = local_transaction_counter + 1;
+				next_block = local_block_counter + 1;
 			}
-
-            // If the next missing transaction is after the target transaction
-            // return because the target has already been pulled
-			if (next_transaction > target) return InternalResponseStatus.OK;
-
+ 
             // GRPC request isnt locked so that no thread needs to wait to send a request
-            TransactionRecord record = sequencer.deliverTransaction(next_transaction);
+            BlockRecord block = sequencer.deliverBlock(next_block);
+            InternalResponseStatus status = executeBlock(block, target);
 
+            // if already completed transaction requested by client return
+            if (local_transaction_counter > target) {
+                return status;
+            }
+        }
+	}
+
+    private InternalResponseStatus executeBlock(BlockRecord block, int target) {
+
+        InternalResponseStatus request_status = InternalResponseStatus.UNKNOWN;
+        List<TransactionRecord> block_transactions = block.getTransactions();
+
+        for (TransactionRecord record : block_transactions) {
 
             synchronized (stateLock) {
                 // Since the grpc request isnt locked, two threads can request the same
                 // transaction, meaning we need to ignore transactions that were already pulled
-				if (local_transaction_counter >= record.getSequenceNumber()) continue;
+                if (local_transaction_counter >= record.getSequenceNumber()) continue;
 
                 // Update wallets based on the pulled transaction (execute)
-				InternalResponseStatus status = executeTransaction(record);
-                
-                // Add transction to list of transactions
-				transactions.add(record);
-				local_transaction_counter++;
+                InternalResponseStatus status = executeTransaction(record);
 
-                // If the pulled transaction is the target requested by the client
                 if (record.getSequenceNumber() == target){
-                    // Return the status related to the transaction
-                    return status;
+                    // Return the status related to the transaction requested by client
+                    request_status = status;
                 }
-			}
-		}
-	}
+                
+                local_transaction_counter++; // all transactions inside the node
+            }
+        }
+        synchronized (stateLock) {
+            if (local_block_counter >= block.getBlockNumber()) return request_status;
+            // Add blcok to list of blocks
+            blocks.add(block);
+            local_block_counter++;  // all blocks inside the node
+        }
+        return request_status; // status of the requested transaction
+    }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {
         switch (record.getType()) {

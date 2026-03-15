@@ -5,6 +5,8 @@ import io.grpc.ManagedChannelBuilder;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.grpc.TransactionToRecord;
 import pt.tecnico.blockchainist.record.TransactionRecord;
+import pt.tecnico.blockchainist.grpc.BlockToBlockRecord;
+import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
 
 public class NodeSequencerService {
@@ -68,17 +70,20 @@ public class NodeSequencerService {
 	}
 
 
-	public TransactionRecord deliverTransaction(int next_transaction){
-		DeliverTransactionRequest request = DeliverTransactionRequest.newBuilder().setSequenceNumber(next_transaction).build();
+
+	public BlockRecord deliverBlock(int next_block){
+		DeliverBlockRequest request = DeliverBlockRequest.newBuilder().setBlockNumber(next_block).build();
 		
 		Debug.log("Sending deliver transaction request to sequencer!\n" + request);
-		Transaction transaction = stub.deliverTransaction(request).getTransaction();
+		Block block = stub.deliverBlock(request).getBlock();
 
-		TransactionRecord record = TransactionToRecord.transactionToRecord(transaction);
-		record.setSequenceNumber(next_transaction);
+		// Block to block record
+		BlockRecord record = BlockToBlockRecord.blockToBlockRecord(block);
 
 		return record;
 	}
+
+
 
 	public void closeChannel(){
 		channel.shutdownNow();
