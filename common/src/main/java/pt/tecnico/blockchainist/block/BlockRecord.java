@@ -15,8 +15,8 @@ public class BlockRecord {
         this.transactions = new ArrayList<>(transactions);
     }
 
-    public int getBlocknumber() {
-        return blockNumber;
+    public int getBlockNumber() {
+        return this.blockNumber;
     }
 
     public List<TransactionRecord> getTransactions() {

@@ -4,8 +4,10 @@ package pt.tecnico.blockchainist.sequencer.grpc;
 import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
+import pt.tecnico.blockchainist.grpc.BlockRecordToBlock;
 import pt.tecnico.blockchainist.grpc.RecordToTransaction;
 import pt.tecnico.blockchainist.grpc.TransactionToRecord;
+import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 import pt.tecnico.blockchainist.record.*;
 
@@ -45,21 +47,21 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
      * @param responseObserver
      */
     @Override
-    public void deliverTransaction(DeliverTransactionRequest request, StreamObserver<DeliverTransactionResponse> responseObserver){
+    public void deliverBlock(DeliverBlockRequest request, StreamObserver<DeliverBlockResponse> responseObserver){
 
-        int sequence_number = request.getSequenceNumber();
+        int block_number = request.getBlockNumber();
 
         Debug.log("\n-----\nSequencer: Deliver transaction request received!\n" + request);
 
-        TransactionRecord record = state.deliverTransaction(sequence_number);
-        Transaction transaction = RecordToTransaction.recordToTransaction(record);
+        BlockRecord record = state.deliverBlock(block_number);
+        Block block = BlockRecordToBlock.blockRecordToBlock(record);
 
-        Debug.log("Delivering transaction to node:\n" + transaction);
+        Debug.log("Delivering block to node:\n" + block);
 
-        DeliverTransactionResponse response = DeliverTransactionResponse.newBuilder().setTransaction(transaction).build();
+        DeliverBlockResponse response = DeliverBlockResponse.newBuilder().setBlock(block).build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     };
-
+    
 }
