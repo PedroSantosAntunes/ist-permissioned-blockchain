@@ -19,13 +19,13 @@ message BroadcastResponse {
 }
 
 
-// DeliverTransactionRequest is sent when the node needs to fetch transactions from the sequencer
+// DeliverBlockRequest is sent when the node needs to fetch transactions from the sequencer
 message DeliverTransactionRequest {
-  int32 sequence_number = 1;
+  int32 block_number = 1;
 }
 
-message DeliverTransactionResponse {
-  Transaction transaction = 1;
+message DeliverBlockResponse {
+  Block block = 1
 }
 
 service SequencerService {
