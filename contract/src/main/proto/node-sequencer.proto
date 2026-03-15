@@ -20,15 +20,15 @@ message BroadcastResponse {
 
 
 // DeliverBlockRequest is sent when the node needs to fetch transactions from the sequencer
-message DeliverTransactionRequest {
+message DeliverBlockRequest {
   int32 block_number = 1;
 }
 
 message DeliverBlockResponse {
-  Block block = 1
+  Block block = 1;
 }
 
 service SequencerService {
   rpc Broadcast(BroadcastRequest) returns (BroadcastResponse);
-  rpc DeliverBlock(DeliverBlockRequest) returns (DeliverBlockResponse)
+  rpc DeliverBlock(DeliverBlockRequest) returns (DeliverBlockResponse);
 }
