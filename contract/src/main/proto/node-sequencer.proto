@@ -30,6 +30,5 @@ message DeliverTransactionResponse {
 
 service SequencerService {
   rpc Broadcast(BroadcastRequest) returns (BroadcastResponse);
-  rpc DeliverTransaction(DeliverTransactionRequest) returns (DeliverTransactionResponse);
-  // TO DO: na entrega B.1, adicionar operação DeliverBlock, que devolve bloco.
+  rpc DeliverBlock(DeliverBlockRequest) returns (DeliverBlockResponse)
 }
