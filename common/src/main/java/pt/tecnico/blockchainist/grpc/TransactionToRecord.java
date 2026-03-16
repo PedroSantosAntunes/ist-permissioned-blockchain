@@ -13,6 +13,7 @@ public abstract class TransactionToRecord {
             case CREATE_WALLET:
                 CreateWalletRequest create = tx.getCreateWallet();
                 return new CreateWalletRecord(
+                        tx.getUuid(),
                         create.getUserId(),
                         create.getWalletId()
                 );
@@ -20,6 +21,7 @@ public abstract class TransactionToRecord {
             case DELETE_WALLET:
                 DeleteWalletRequest delete = tx.getDeleteWallet();
                 return new DeleteWalletRecord(
+                        tx.getUuid(),
                         delete.getUserId(),
                         delete.getWalletId()
                 );
@@ -27,6 +29,7 @@ public abstract class TransactionToRecord {
             case TRANSFER:
                 TransferRequest transfer = tx.getTransfer();
                 return new TransferRecord(
+                        tx.getUuid(),
                         transfer.getSrcUserId(),
                         transfer.getSrcWalletId(),
                         transfer.getDstWalletId(),

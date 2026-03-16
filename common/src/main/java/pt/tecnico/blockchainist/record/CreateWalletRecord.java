@@ -4,7 +4,8 @@ public class CreateWalletRecord extends TransactionRecord {
     private String userId;
     private String walletId;
 
-    public CreateWalletRecord(String userId, String walletId){
+    public CreateWalletRecord(String transactionId, String userId, String walletId){
+        super(transactionId);
         this.userId = userId;
         this.walletId = walletId;
     }

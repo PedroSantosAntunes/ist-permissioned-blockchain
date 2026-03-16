@@ -25,10 +25,12 @@ message TransferRequest {
 }
 
 message Transaction {
+  string uuid = 1;
+
   oneof operation {
-    CreateWalletRequest create_wallet = 1;
-    DeleteWalletRequest delete_wallet = 2;
-    TransferRequest transfer = 3;
+    CreateWalletRequest create_wallet = 2;
+    DeleteWalletRequest delete_wallet = 3;
+    TransferRequest transfer = 4;
   }
 }
 
