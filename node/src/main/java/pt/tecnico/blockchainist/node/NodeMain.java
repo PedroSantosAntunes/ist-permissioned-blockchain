@@ -8,7 +8,8 @@ import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.node.grpc.NodeServiceImpl;
 
 import pt.tecnico.blockchainist.debug.Debug;
-
+import io.grpc.ServerInterceptors;
+import pt.tecnico.blockchainist.node.grpc.DelayNodeInterceptor;
 import java.io.IOException;
 
 public class NodeMain {
@@ -75,8 +76,13 @@ public class NodeMain {
         
         final BindableService impl = new NodeServiceImpl(state);
 
-        Server server = ServerBuilder.forPort(nodePort).addService(impl).build();
-        
+        Server server = ServerBuilder.forPort(nodePort)
+            .addService(ServerInterceptors.intercept(
+                impl,
+                new DelayNodeInterceptor()
+            ))
+            .build();
+
         server.start();
         Debug.log("Node started");
         server.awaitTermination();

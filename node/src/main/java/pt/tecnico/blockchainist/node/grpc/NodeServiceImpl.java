@@ -9,6 +9,7 @@ import pt.tecnico.blockchainist.status.InternalResponseStatus;
 import pt.tecnico.blockchainist.grpc.*;
 
 import static io.grpc.Status.*;
+import io.grpc.Context;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
-
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
@@ -40,7 +40,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) { 
-        
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
@@ -56,7 +55,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void readBalance(ReadBalanceRequest request, StreamObserver<ReadBalanceResponse> responseObserver) {
-        
         String walletId = request.getWalletId();
 
         Debug.log("\n-----\nNode: Read balance request received!\n" + request);
@@ -74,7 +72,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
-
         String srcUserId = request.getSrcUserId();
         String srcWalletId = request.getSrcWalletId();
         String dstWalletId = request.getDstWalletId();
@@ -113,7 +110,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onCompleted();
         }
     }
-
 
     private boolean isError(InternalResponseStatus status, StreamObserver<?> responseObserver) {
         if (status == InternalResponseStatus.OK) {

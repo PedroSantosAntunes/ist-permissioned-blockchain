@@ -117,7 +117,7 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
 
         try {
-            node.createWallet(userId, walletId);
+            node.createWallet(userId, walletId, nodeDelay);
             displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
@@ -141,7 +141,7 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
 
         try {
-            node.deleteWallet(userId, walletId);
+            node.deleteWallet(userId, walletId, nodeDelay);
             displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
@@ -164,7 +164,7 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
 
         try{
-            long balance = node.readBalance(walletId);
+            long balance = node.readBalance(walletId, nodeDelay);
             displaySuccessOperation(commandNumber, "OK");
             System.out.println(balance);
         } catch (StatusRuntimeException e) {
@@ -191,7 +191,7 @@ public class CommandProcessor {
         ClientNodeService node = nodes.get(nodeIndex);
         
         try{
-            node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount);
+            node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount, nodeDelay);
             displaySuccessOperation(commandNumber, "OK");
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
