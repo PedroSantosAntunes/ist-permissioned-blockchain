@@ -3,6 +3,7 @@ package pt.tecnico.blockchainist.node.domain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.regex.Pattern;
@@ -14,13 +15,16 @@ import pt.tecnico.blockchainist.record.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
 
 public class NodeState {
-    
+    //TODO provavelmente 
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
+    //TODO ArrayList mau, mudar
     private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
-    private int local_transaction_counter = 0;
-    private int local_block_counter = 0;
+    private final Map<String, CompletableFuture<InternalResponseStatus>> pendingTransactions = new ConcurrentHashMap<>();
+    private final Map<String, InternalResponseStatus> completedTransaction = new ConcurrentHashMap<>();
+    private int node_transaction_counter = 0;
+    private int node_block_counter = 0;
     
     private final Object stateLock = new Object();
 
@@ -38,32 +42,66 @@ public class NodeState {
         this.sequencer = sequencer;
     }
     
-    public InternalResponseStatus createWallet(String userId, String walletId) {
+    public InternalResponseStatus createWallet(String uuid, String userId, String walletId) {
+        InternalResponseStatus completed = completedTransaction.get(uuid);
+        if (completed != null) {
+            return completed;
+        }
         
         InternalResponseStatus argsInternalResponseStatus = validateCreateWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-        
-        int target_transaction = sequencer.broadcastCreateWallet(userId, walletId);
-        return pullMissingTransactions(target_transaction);
+
+        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        sequencer.broadcastCreateWallet(uuid, userId, walletId);
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            //TODO
+            return InternalResponseStatus.OK;
+        }  
     }
 
-    public InternalResponseStatus deleteWallet(String userId, String walletId) {
+    public InternalResponseStatus deleteWallet(String uuid, String userId, String walletId) {
         
+        InternalResponseStatus completed = completedTransaction.get(uuid);
+        if (completed != null) {
+            return completed;
+        }
+
         InternalResponseStatus argsInternalResponseStatus = validateDeleteWalletArgs(userId, walletId);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-        
-        int target_transaction = sequencer.broadcastDeleteWallet(userId, walletId);
-        return pullMissingTransactions(target_transaction);
+
+        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        sequencer.broadcastDeleteWallet(uuid, userId, walletId);
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            //TODO
+            return InternalResponseStatus.OK;
+        } 
     }
 
-    public InternalResponseStatus transfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    public InternalResponseStatus transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+
+        InternalResponseStatus completed = completedTransaction.get(uuid);
+        if (completed != null) {
+            return completed;
+        }
 
         InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
-        int target_transaction = sequencer.broadcastTransfer(srcUserId, srcWalletId, dstWalletId, amount);
-        
-        return pullMissingTransactions(target_transaction);
+        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+
+        try {
+            return future.get();
+        } catch (Exception e) {
+            //TODO
+            return InternalResponseStatus.OK;
+        }        
     }
 
     public long readBalance(String walletId) {
@@ -83,68 +121,29 @@ public class NodeState {
         }
     }
 
-    /**
-     * This method continuously fetches and applies missing transactions.
-     * It uses two synchronized blocks rather than locking the entire method.
-     * This is mainly because deliverTransaction invololves network communication.
-     * Example:
-     * If Thread A needs to fetch up to transaction 10 and Thread B needs up to transaction 3.
-     * A single lock would force Thread B to wait idly for Thread A to finish fetching all 
-     * missing transactions. By fetching outside the synchronized block both threads can request
-     * missing transactions from the sequencer. Since the sequencer is synchronized, this may seem 
-     * like a logic error but it allows  Thread B to concurrently dispatches its own request. The 
-     * second synchronized block acts as a double-check mechanism: if both threads happen to fetch 
-     * the same transaction, the condition (local_transaction_counter >= sequenceNumber)
-     * ensures the transaction is only applied once, maintaining strict state consistency.
-     */
-    public InternalResponseStatus pullMissingTransactions (int target) {
-		while (true) {
-			int next_block;
-			synchronized (stateLock) {
-				next_block = local_block_counter + 1;
-			}
- 
-            // GRPC request isnt locked so that no thread needs to wait to send a request
-            BlockRecord block = sequencer.deliverBlock(next_block);
-            InternalResponseStatus status = executeBlock(block, target);
+    public void getBlock () { 
+        BlockRecord block = sequencer.deliverBlock(node_block_counter + 1);
+        executeBlock(block);
+    }
+	
 
-            // if already completed transaction requested by client return
-            if (local_transaction_counter > target) {
-                return status;
-            }
-        }
-	}
-
-    private InternalResponseStatus executeBlock(BlockRecord block, int target) {
-
-        InternalResponseStatus request_status = InternalResponseStatus.UNKNOWN;
+    private void executeBlock(BlockRecord block) {
+        //TODO locks e paralelismo
         List<TransactionRecord> block_transactions = block.getTransactions();
 
         for (TransactionRecord record : block_transactions) {
+            InternalResponseStatus requestStatus = executeTransaction(record);
 
-            synchronized (stateLock) {
-                // Since the grpc request isnt locked, two threads can request the same
-                // transaction, meaning we need to ignore transactions that were already pulled
-                if (local_transaction_counter >= record.getSequenceNumber()) continue;
+            CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getId());
 
-                // Update wallets based on the pulled transaction (execute)
-                InternalResponseStatus status = executeTransaction(record);
-
-                if (record.getSequenceNumber() == target){
-                    // Return the status related to the transaction requested by client
-                    request_status = status;
-                }
-                
-                local_transaction_counter++; // all transactions inside the node
+            if (future != null) {
+                future.complete(requestStatus);
             }
+            completedTransaction.put(record.getId(), requestStatus);
         }
-        synchronized (stateLock) {
-            if (local_block_counter >= block.getBlockNumber()) return request_status;
-            // Add blcok to list of blocks
-            blocks.add(block);
-            local_block_counter++;  // all blocks inside the node
-        }
-        return request_status; // status of the requested transaction
+
+        blocks.add(block);
+        node_block_counter++;
     }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {

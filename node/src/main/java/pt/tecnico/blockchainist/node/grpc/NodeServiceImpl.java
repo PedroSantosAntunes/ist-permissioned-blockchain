@@ -25,12 +25,13 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
 
     @Override
     public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
+        String uuid = request.getUuid();
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
         Debug.log("\n-----\nNode: Create wallet request received!\n" + request);
 
-        InternalResponseStatus result = state.createWallet(userId, walletId);  
+        InternalResponseStatus result = state.createWallet(uuid, userId, walletId);  
         if(!isError(result, responseObserver)) {
             CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
             responseObserver.onNext(response);
@@ -39,15 +40,34 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     }
 
     @Override
-    public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) { 
+    public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) {
+        String uuid = request.getUuid();
         String userId = request.getUserId();
         String walletId = request.getWalletId();
 
         Debug.log("\n-----\nNode: Delete wallet request received!\n" + request);
 
-        InternalResponseStatus result = state.deleteWallet(userId, walletId);
+        InternalResponseStatus result = state.deleteWallet(uuid, userId, walletId);
         if(!isError(result, responseObserver)) {
             DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        }  
+    }
+
+    @Override
+    public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
+        String uuid = request.getUuid();
+        String srcUserId = request.getSrcUserId();
+        String srcWalletId = request.getSrcWalletId();
+        String dstWalletId = request.getDstWalletId();
+        Long amount = request.getValue();
+
+        Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
+
+        InternalResponseStatus result = state.transfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+        if(!isError(result, responseObserver)) {
+            TransferResponse response = TransferResponse.getDefaultInstance();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }  
@@ -68,23 +88,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         }
-    }
-
-    @Override
-    public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
-        String srcUserId = request.getSrcUserId();
-        String srcWalletId = request.getSrcWalletId();
-        String dstWalletId = request.getDstWalletId();
-        Long amount = request.getValue();
-
-        Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
-
-        InternalResponseStatus result = state.transfer(srcUserId, srcWalletId, dstWalletId, amount);
-        if(!isError(result, responseObserver)) {
-            TransferResponse response = TransferResponse.getDefaultInstance();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }  
     }
 
     @Override

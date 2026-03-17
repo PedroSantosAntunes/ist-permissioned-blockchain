@@ -54,7 +54,7 @@ public class ClientMain {
         
         } finally {
             terminateNodeChannels(nodes);
-        }     
+        }
     }
 
     private static void terminateNodeChannels(ArrayList<ClientNodeService> nodes) {

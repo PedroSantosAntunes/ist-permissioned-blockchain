@@ -71,7 +71,6 @@ public class NodeMain {
 
         NodeSequencerService sequencer = new NodeSequencerService(sequencerHost, sequencerPort);
 
-
         NodeState state = new NodeState(sequencer);
         
         final BindableService impl = new NodeServiceImpl(state);

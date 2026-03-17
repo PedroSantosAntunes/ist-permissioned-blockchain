@@ -31,10 +31,11 @@ public class NodeSequencerService {
 	}
 
 
-	public int broadcastCreateWallet(String userId, String walletId){
+	public int broadcastCreateWallet(String uuid, String userId, String walletId){
 		Transaction transaction = Transaction.newBuilder()
         .setCreateWallet(
             CreateWalletRequest.newBuilder()
+			.setUuid(uuid)
             .setUserId(userId)
             .setWalletId(walletId)
             .build()
@@ -43,22 +44,24 @@ public class NodeSequencerService {
 		return broadcast(transaction);
 	}
 
-	public int broadcastDeleteWallet(String userId, String walletId){
+	public int broadcastDeleteWallet(String uuid, String userId, String walletId){
 		Transaction transaction = Transaction.newBuilder()
-                .setDeleteWallet(
-                    DeleteWalletRequest.newBuilder()
-                        .setUserId(userId)
-                        .setWalletId(walletId)
-                        .build()
-                ).build();
+            .setDeleteWallet(
+                DeleteWalletRequest.newBuilder()
+					.setUuid(uuid)
+                    .setUserId(userId)
+                    .setWalletId(walletId)
+                    .build()
+            ).build();
 
 		return broadcast(transaction);
 	}
 
-	public int broadcastTransfer(String srcUserId, String srcWalletId, String dstWalletId, Long amount){
+	public int broadcastTransfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount){
 		Transaction transaction = Transaction.newBuilder()
                 .setTransfer(
                     TransferRequest.newBuilder()
+						.setUuid(uuid)
                         .setSrcUserId(srcUserId)
                         .setSrcWalletId(srcWalletId)
                         .setDstWalletId(dstWalletId)

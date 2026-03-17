@@ -7,27 +7,33 @@ import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.Metadata;
 import io.grpc.stub.MetadataUtils;
+import pt.tecnico.blockchainist.client.grpc.*;
+import java.util.concurrent.TimeUnit;
 
 public class ClientNodeService {
 
 	final ManagedChannel channel;
-	private NodeServiceGrpc.NodeServiceBlockingStub stub;
+	private NodeServiceGrpc.NodeServiceBlockingStub syncStub;
+	private NodeServiceGrpc.NodeServiceStub asyncStub;
 	private String organization;
-
+	
+	private final static long TIME_OUT_SECONDS = 2;
 	static final Metadata.Key<String> DELAY_HEADER_KEY =
-        Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);
+        Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);// TODO: PRIVATE?
 
 	public ClientNodeService(String host, int port, String organization) {
         final String target = host + ":" + port;
 
 		this.channel  = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
 
-		this.stub = NodeServiceGrpc.newBlockingStub(channel);
+		this.syncStub = NodeServiceGrpc.newBlockingStub(channel);
+		this.asyncStub = NodeServiceGrpc.newStub(channel);
 		this.organization = organization;
     }
 
-	public void createWallet(String userId, String walletId, Integer delay){
+	public void createWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking){
 		CreateWalletRequest request = CreateWalletRequest.newBuilder()
+			.setUuid(uuid)
 			.setUserId(userId)
 			.setWalletId(walletId)
 			.build();
@@ -35,11 +41,22 @@ public class ClientNodeService {
 		Debug.log("\n-----\nClient: Sending create wallet request!\n" + request);
 
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
-		stub.withInterceptors(delayInterceptor).createWallet(request);
+		if (isBlocking){
+			syncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.createWallet(request);
+		} else {
+			asyncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.createWallet(request, new ClientAsyncResponseObserver<CreateWalletResponse>());
+		}
 	}
 
-	public void deleteWallet(String userId, String walletId, Integer delay){
+	public void deleteWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking){
 		DeleteWalletRequest request = DeleteWalletRequest.newBuilder()
+			.setUuid(uuid)
 			.setUserId(userId)
 			.setWalletId(walletId)
 			.build();
@@ -47,10 +64,21 @@ public class ClientNodeService {
 		Debug.log("\n-----\nClient: Sending delete wallet request!\n" + request);
 
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
-		stub.withInterceptors(delayInterceptor).deleteWallet(request);
+		if (isBlocking) {
+			syncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.deleteWallet(request);
+		}
+		else {
+			asyncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.deleteWallet(request, new ClientAsyncResponseObserver<DeleteWalletResponse>());
+		}
 	}
 
-	public long readBalance(String walletId, Integer delay){
+	public long readBalance(String walletId, Integer delay, Boolean isBlocking){
 		ReadBalanceRequest request = ReadBalanceRequest.newBuilder()
 			.setWalletId(walletId)
 			.build();
@@ -58,11 +86,24 @@ public class ClientNodeService {
 		Debug.log("\n-----\nClient: Sending read balance request!\n" + request);
 
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
-		return stub.withInterceptors(delayInterceptor).readBalance(request).getBalance();
+		long balance;
+		if (isBlocking){
+			return syncStub
+					.withInterceptors(delayInterceptor)
+					.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+					.readBalance(request).getBalance();
+		} else {
+			asyncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.readBalance(request, new ClientAsyncResponseObserver<ReadBalanceResponse>());
+		}
+		return -1L; // Placeholder return value for async case
 	}
 
-	public void transfer(String srcUserId, String srcWalletId, String dstWalletId, long value, Integer delay){
+	public void transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, long value, Integer delay, Boolean isBlocking){
 		TransferRequest request = TransferRequest.newBuilder()
+			.setUuid(uuid)
 			.setSrcUserId(srcUserId)
 			.setSrcWalletId(srcWalletId)
 			.setDstWalletId(dstWalletId)
@@ -72,7 +113,18 @@ public class ClientNodeService {
 		Debug.log("\n-----\nClient: Sending transfer request!\n" + request);
 
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
-		stub.withInterceptors(delayInterceptor).transfer(request);
+		if (isBlocking) {
+			syncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.transfer(request);
+			}
+		else {
+			asyncStub
+				.withInterceptors(delayInterceptor)
+				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+				.transfer(request, new ClientAsyncResponseObserver<TransferResponse>());
+		}
 	}
 
 	public String getBlockchainState(){
@@ -80,8 +132,9 @@ public class ClientNodeService {
 
 		Debug.log("\n-----\nClient: Sending blockchain state request!\n" + request);
 
-		GetBlockchainStateResponse response = stub.getBlockchainState(request);
-		
+		GetBlockchainStateResponse response = syncStub
+												.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+												.getBlockchainState(request);
 		return response.toString();
 	}
 
@@ -93,7 +146,7 @@ public class ClientNodeService {
 		channel.shutdownNow();
 	}
 
-	// for now this is only for blocking stubs
+	// for now this is only for blocking stubs // TODO: WHAT PEDRO???
 	private ClientInterceptor withDelayHeader(Integer nodeDelay) {
 		Metadata metadata = new Metadata();
 		metadata.put(DELAY_HEADER_KEY, String.valueOf(nodeDelay));

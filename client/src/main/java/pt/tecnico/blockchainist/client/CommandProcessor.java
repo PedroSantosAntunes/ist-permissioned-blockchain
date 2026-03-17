@@ -1,11 +1,20 @@
 package pt.tecnico.blockchainist.client;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
+import javax.management.RuntimeErrorException;
+
+import java.util.UUID;
+
 import io.grpc.StatusRuntimeException;
+import pt.tecnico.blockchainist.client.domain.PendingRequest;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 
 
@@ -28,13 +37,13 @@ public class CommandProcessor {
 
     private final AtomicLong commandCounter = new AtomicLong(0);
     private final ArrayList<ClientNodeService> nodes;
+    private final ConcurrentHashMap<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>(); // <UUID, PENDING REQUEST>
 
     public CommandProcessor(ArrayList<ClientNodeService> nodes) {
         this.nodes = nodes;
     }
 
     void userInputLoop() {
-
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
 
@@ -43,61 +52,66 @@ public class CommandProcessor {
             String line = scanner.nextLine().trim();
             String[] split = line.split(SPACE);
             try {
-                switch (split[0]) {
-                    case CREATE_BLOCKING:
-                        this.create(split, true);
-                        break;
-
-                    case CREATE_ASYNC:
-                        this.create(split, false);
-                        break;
-
-                    case DELETE_BLOCKING:
-                        this.delete(split, true);
-                        break;
-
-                    case DELETE_ASYNC:
-                        this.delete(split, false);
-                        break;
-
-                    case BALANCE_BLOCKING:
-                        this.balance(split, true);
-                        break;
-
-                    case BALANCE_ASYNC:
-                        this.balance(split, false);
-                        break;
-
-                    case TRANSFER_BLOCKING:
-                        this.transfer(split, true);
-                        break;
-
-                    case TRANSFER_ASYNC:
-                        this.transfer(split, false);
-                        break;
-
-                    case DEBUG_BLOCKCHAIN_STATE:
-                        this.debugBlockchainState(split);
-                        break;
-
-                    case PAUSE:
-                        this.pause(split);
-                        break;
-
-                    case EXIT:
-                        exit = true;
-                        break;
-
-                    default:
-                        printUsage();
-                        break;
-                }
+                exit = selectCommand(exit, split);
             } catch (IllegalArgumentException e) {
                 System.err.println("Error: " + e.getMessage());
                 printUsage();
             }
         }
         scanner.close();
+    }
+
+    private boolean selectCommand(boolean exit, String[] split) {
+        switch (split[0]) {
+            case CREATE_BLOCKING: 
+                this.create(split, true); 
+                break;
+
+            case CREATE_ASYNC:
+                this.create(split, false);
+                break;
+
+            case DELETE_BLOCKING:
+                this.delete(split, true);
+                break;
+
+            case DELETE_ASYNC:
+                this.delete(split, false);
+                break;
+
+            case BALANCE_BLOCKING:
+                this.balance(split, true);
+                break;
+
+            case BALANCE_ASYNC:
+                this.balance(split, false);
+                break;
+
+            case TRANSFER_BLOCKING:
+                this.transfer(split, true);
+                break;
+
+            case TRANSFER_ASYNC:
+                this.transfer(split, false);
+                break;
+
+            case DEBUG_BLOCKCHAIN_STATE:
+                this.debugBlockchainState(split);
+                break;
+
+            case PAUSE:
+                this.pause(split);
+                break;
+
+            case EXIT:
+                exit = true;
+                break;
+
+            default:
+                printUsage();
+                break;
+        }
+        return exit;
     }
 
     /**
@@ -110,18 +124,11 @@ public class CommandProcessor {
 
         Long commandNumber = this.commandCounter.incrementAndGet();
 
-        String userId = split[1];
-        String walletId = split[2];
-        Integer nodeIndex = Integer.parseInt(split[3]);
-        Integer nodeDelay = Integer.parseInt(split[4]);
-        ClientNodeService node = nodes.get(nodeIndex);
-
-        try {
-            node.createWallet(userId, walletId, nodeDelay);
-            displaySuccessOperation(commandNumber, "OK");
-        } catch (StatusRuntimeException e) {
-            displayErrorOperation(commandNumber, e.getStatus().getDescription());
-        }
+        String uuid = UUID.randomUUID().toString();
+        String type = isBlocking ? CREATE_BLOCKING : CREATE_ASYNC;
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 3);
+        pendingRequests.put(uuid, request);
+        callNode(request);
     }
 
     /**
@@ -133,19 +140,13 @@ public class CommandProcessor {
         this.checkDeleteCommandArgs(split);
 
         Long commandNumber = this.commandCounter.incrementAndGet();
-
-        String userId = split[1];
-        String walletId = split[2];
-        Integer nodeIndex = Integer.parseInt(split[3]);
-        Integer nodeDelay = Integer.parseInt(split[4]);
-        ClientNodeService node = nodes.get(nodeIndex);
-
-        try {
-            node.deleteWallet(userId, walletId, nodeDelay);
-            displaySuccessOperation(commandNumber, "OK");
-        } catch (StatusRuntimeException e) {
-            displayErrorOperation(commandNumber, e.getStatus().getDescription());
-        }
+        String uuid = UUID.randomUUID().toString();
+        String type = isBlocking ? DELETE_BLOCKING : DELETE_ASYNC;
+        
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 3);
+        pendingRequests.put(uuid, request);
+        
+        callNode(request);
     }
 
     /**
@@ -158,18 +159,13 @@ public class CommandProcessor {
 
         Long commandNumber = this.commandCounter.incrementAndGet();
 
-        String walletId = split[1];
-        Integer nodeIndex = Integer.parseInt(split[2]);
-        Integer nodeDelay = Integer.parseInt(split[3]);
-        ClientNodeService node = nodes.get(nodeIndex);
-
-        try{
-            long balance = node.readBalance(walletId, nodeDelay);
-            displaySuccessOperation(commandNumber, "OK");
-            System.out.println(balance);
-        } catch (StatusRuntimeException e) {
-            displayErrorOperation(commandNumber, e.getStatus().getDescription());
-        }
+        String uuid = UUID.randomUUID().toString();
+        String type = isBlocking ? BALANCE_BLOCKING : BALANCE_ASYNC; 
+        
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 2);
+        pendingRequests.put(uuid, request);
+        
+        callNode(request);
     }
 
     /**
@@ -182,22 +178,58 @@ public class CommandProcessor {
 
         Long commandNumber = this.commandCounter.incrementAndGet();
 
-        String sourceUserId = split[1];
-        String sourceWalletId = split[2];
-        String destinationWalletId = split[3];
-        Long amount = Long.parseLong(split[4]);
-        Integer nodeIndex = Integer.parseInt(split[5]);
-        Integer nodeDelay = Integer.parseInt(split[6]);
-        ClientNodeService node = nodes.get(nodeIndex);
-        
-        try{
-            node.transfer(sourceUserId, sourceWalletId, destinationWalletId, amount, nodeDelay);
-            displaySuccessOperation(commandNumber, "OK");
-        } catch (StatusRuntimeException e) {
-            displayErrorOperation(commandNumber, e.getStatus().getDescription());
-        }
+        String uuid = UUID.randomUUID().toString();
+        String type = isBlocking ? TRANSFER_BLOCKING : TRANSFER_ASYNC;
+
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 5);
+        pendingRequests.put(uuid, request);
+        callNode(request);
     }
 
+    private void callNode(PendingRequest request) {
+        int nodeIndex = request.getNodeIndex();
+        ClientNodeService node = nodes.get(nodeIndex);
+        String requestType = request.getType();
+        String resultToPrint = null;
+        try {
+            switch(requestType) {
+                case CREATE_ASYNC:
+                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), false);
+                    break;
+                case CREATE_BLOCKING:
+                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), true);
+                    break;
+                case DELETE_ASYNC: 
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), false);
+                    break;
+                case DELETE_BLOCKING:
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), true);
+                    break;
+                case TRANSFER_ASYNC:
+                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), false);
+                    break;
+                case TRANSFER_BLOCKING:
+                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), true);
+                    break;
+                case BALANCE_ASYNC:
+                    node.readBalance(request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), false);
+                    break;
+                case BALANCE_BLOCKING:
+                    long balance = node.readBalance(request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), true);
+                    resultToPrint = String.valueOf(balance);
+                    break;
+            }
+
+            if (request.getIsBlocking()) {
+                pendingRequests.remove(request.getUuid());
+                displaySuccessOperation(request.getCommandNumber(),"OK", resultToPrint);
+            }
+
+        } catch (StatusRuntimeException error) {
+            handleError(request.getUuid(), error);
+        }
+
+    }
     /**
      * Request current blockchain state (leBlockchain)
      * @param split
@@ -213,7 +245,7 @@ public class CommandProcessor {
         
         try{
             String transactions = node.getBlockchainState();
-            displaySuccessOperation(commandNumber, "OK");
+            displaySuccessOperation(commandNumber, "OK", null);
             System.out.println(transactions);
         } catch (StatusRuntimeException e) {
             displayErrorOperation(commandNumber, e.getStatus().getDescription());
@@ -387,11 +419,37 @@ public class CommandProcessor {
                 "- X\n");
     }
 
-    private static void displaySuccessOperation(Long commandNumber, String statusMessage) {
+    private static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {
         System.out.println(statusMessage + " " + commandNumber);
+        if (extraOutput != null) {
+            System.out.println(extraOutput);
+        }
     }
 
     private static void displayErrorOperation(Long commandNumber, String statusMessage) {
         System.err.println(statusMessage + " " + commandNumber);
     }
+
+
+    private void handleError(String uuid, StatusRuntimeException e) {
+        PendingRequest request = pendingRequests.get(uuid); 
+        
+        switch (e.getStatus().getCode()) {    
+            
+            case UNAVAILABLE, DEADLINE_EXCEEDED, CANCELLED:
+                if(request.tryNextNode(nodes.size()))
+                    callNode(request); 
+                else {
+                    pendingRequests.remove(uuid);
+                    displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription());
+                }
+                break;
+
+            default:
+                pendingRequests.remove(uuid);
+                displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription()); 
+                break;
+        }
+    }
+
 }

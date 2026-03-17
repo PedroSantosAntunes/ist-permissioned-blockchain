@@ -8,29 +8,30 @@ package pt.tecnico.blockchainist.contract;
 option java_multiple_files = true;
 
 message CreateWalletRequest {
-  string userId = 1;
-  string walletId = 2;
+  string uuid = 1;
+  string userId = 2;
+  string walletId = 3;
 }
 
 message DeleteWalletRequest {
-  string userId = 1;
-  string walletId = 2;
+  string uuid = 1;
+  string userId = 2;
+  string walletId = 3;
 }
 
 message TransferRequest {
-  string src_userId = 1;
-  string src_walletId = 2;
-  string dst_walletId = 3;
-  uint64 value = 4;
+  string uuid = 1;
+  string src_userId = 2;
+  string src_walletId = 3;
+  string dst_walletId = 4;
+  uint64 value = 5;
 }
 
 message Transaction {
-  string uuid = 1;
-
   oneof operation {
-    CreateWalletRequest create_wallet = 2;
-    DeleteWalletRequest delete_wallet = 3;
-    TransferRequest transfer = 4;
+    CreateWalletRequest create_wallet = 1;
+    DeleteWalletRequest delete_wallet = 2;
+    TransferRequest transfer = 3;
   }
 }
 
