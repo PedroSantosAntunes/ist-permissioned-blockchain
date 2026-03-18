@@ -108,10 +108,18 @@ public class NodeState {
         }
     }
 
+    //TODO readBalance pode ler valor stale?
+    //EX: Wallet wallet = wallet... a wallet é deleted mas ele ainda tem a referencia, le o valor do balance antes de esta ser apagada mesmo que ja tenha sido apagada.
     public long readBalance(String walletId) {
         Wallet wallet = wallets.getOrDefault(walletId, null);
         if (wallet == null){ return -1L; }
-        return wallet.getBalance();
+        wallet.readLock().lock();
+
+        try {
+            return wallet.getBalance();
+        } finally {
+            wallet.readLock().unlock();
+        }
     }
 
     public ArrayList<BlockRecord> getBlockchainState(){		
@@ -190,7 +198,7 @@ public class NodeState {
         wallet.writeLock().lock();
 
         try {
-            InternalResponseStatus status = canDeleteWallet(record.getUserId(), record.getWalletId());
+            InternalResponseStatus status = canDeleteWallet(wallet, record.getUserId());
             if (status != InternalResponseStatus.OK) { return status; }
         
             wallets.remove(record.getWalletId());
@@ -203,8 +211,6 @@ public class NodeState {
     }
 
     private InternalResponseStatus executeTransfer(TransferRecord record) {
-        Wallet firstLock;
-        Wallet secondLock;
         Wallet srcWallet;
         Wallet dstWallet;
 
@@ -224,16 +230,8 @@ public class NodeState {
             return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
 
-        if (record.getSrcWalletId().compareTo(record.getDstWalletId()) < 0) {
-            firstLock = srcWallet;
-            secondLock = dstWallet;
-        } else {
-            firstLock = dstWallet;
-            secondLock = srcWallet;
-        }
-
-        firstLock.writeLock().lock();
-        secondLock.writeLock().lock();
+        srcWallet.writeLock().lock();
+        dstWallet.writeLock().lock();
 
         try {
             InternalResponseStatus status = canTransfer(srcWallet, record.getSrcUserId(), record.getAmount());
@@ -246,8 +244,8 @@ public class NodeState {
             Debug.log("Transferred: " + record.getAmount() + " : " + record.getSrcWalletId() + " > " + record.getDstWalletId());
             return InternalResponseStatus.OK;
         } finally {
-            secondLock.writeLock().unlock();
-            firstLock.writeLock().unlock();
+            srcWallet.writeLock().unlock();
+            dstWallet.writeLock().unlock();
         }
     }
     
@@ -323,19 +321,19 @@ public class NodeState {
      * Validates dynamic conditions to Delete_Wallet
      * (if the current state allows this transaction to be executed)
      */
-    private InternalResponseStatus canDeleteWallet(String userId, String walletId) {
-        if (!userExists(userId)) {
-            System.err.println("User id does not exist: " + userId);
-            return InternalResponseStatus.USER_NOT_FOUND;
-        }
-
-        long balance = wallets.get(walletId).getBalance();
+    private InternalResponseStatus canDeleteWallet(Wallet wallet, String userId) {
+        //TODO: ISTO NAO FAZ SENTIDO VER SE È PRECISO
+        // if (!userExists(userId)) {
+        //     System.err.println("User id does not exist: " + userId);
+        //     return InternalResponseStatus.USER_NOT_FOUND;
+        // }
+        long balance = wallet.getBalance();
         if (!isZeroBalance(balance)) {
             System.err.println("Wallet id with balance other than 0: " + balance);
             return InternalResponseStatus.REMAINING_BALANCE;
         } 
-        if (!isAuthorized(walletId, userId)) {
-            System.err.println("Wallet id " + walletId + "does not belong to user " + userId);
+        if (!isAuthorized(wallet, userId)) {
+            System.err.println("Wallet id " + wallet.getWalletId() + "does not belong to user " + userId);
             return InternalResponseStatus.NOT_AUTHORIZED;
         }
         return InternalResponseStatus.OK;
@@ -347,8 +345,8 @@ public class NodeState {
      */
     private InternalResponseStatus canTransfer(Wallet srcWallet, String userId, long amount) {
         
-        if (!isAuthorized(srcWallet.getUserId(), userId)) {
-            System.err.println("Wallet id " + srcWallet.getUserId() + "does not belong to user " + userId);
+        if (!isAuthorized(srcWallet, userId)) {
+            System.err.println("Wallet id " + srcWallet.getWalletId() + "does not belong to user " + userId);
             return InternalResponseStatus.NOT_AUTHORIZED;
         }
 
@@ -367,6 +365,7 @@ public class NodeState {
         return true;
     }
 
+    //TODO: JA NAO USO?! VER OUTRO TODO
     private boolean userExists(String userId) {
         for (Wallet wallet : wallets.values()) {
             if (wallet.getUserId().equals(userId)) {
@@ -381,8 +380,8 @@ public class NodeState {
     }
 
     // Checks if the wallet belongs to the user
-    private boolean isAuthorized(String walletUserId, String userId) {
-        return walletUserId.equals(userId);
+    private boolean isAuthorized(Wallet wallet, String userId) {
+        return wallet.getUserId().equals(userId);
     }
 
     private boolean hasEnoughBalance(long balanceSrc, long amount){
