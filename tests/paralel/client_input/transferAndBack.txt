@@ -1,0 +1,14 @@
+C Alice cA 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+T BC bc cA 5 0 0
+T Alice cA bc 5 0 0
+X

@@ -12,7 +12,7 @@ import pt.tecnico.blockchainist.record.*;
 public class SequencerState {
 
     private final ArrayList<BlockRecord> blockChain = new ArrayList<BlockRecord>();
-    private static final int MAX_TRANSACTIONS_PER_BLOCK = 1;
+    private static final int MAX_TRANSACTIONS_PER_BLOCK = 5;
     private int next_block_number = 1;
 
     private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
@@ -24,6 +24,7 @@ public class SequencerState {
     private boolean resetTimer = false;
 
     public SequencerState(){
+        startCountdownThread();
     }
 
     /**

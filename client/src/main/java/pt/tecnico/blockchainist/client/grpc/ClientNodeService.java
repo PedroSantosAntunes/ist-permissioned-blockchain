@@ -20,7 +20,7 @@ public class ClientNodeService {
 	
 	private CommandProcessor processor;
 
-	private final static long TIME_OUT_SECONDS = 6;
+	private final static long TIME_OUT_SECONDS = 10;
 	private static final Metadata.Key<String> DELAY_HEADER_KEY =
         Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);
 

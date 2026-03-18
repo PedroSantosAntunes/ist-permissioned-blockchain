@@ -1,6 +1,0 @@
-C Alice cA 0 0
-C Bob cB 0 0
-T BC bc cA 10 0 0
-T BC bc cA 10 0 0
-T BC bc cA 10 0 0
-X
