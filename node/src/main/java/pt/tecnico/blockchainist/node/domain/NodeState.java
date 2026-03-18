@@ -59,7 +59,10 @@ public class NodeState {
         sequencer.broadcastCreateWallet(uuid, userId, walletId);
 
         try {
-            return future.get();
+            InternalResponseStatus test = future.get();
+            //TODO REMOVER
+            System.out.println("\ngot future:" + test + "\n");
+            return test;
         } catch (Exception e) {
             //TODO
             return InternalResponseStatus.OK;
@@ -148,8 +151,11 @@ public class NodeState {
             //TODO precisa lock?
             node_transaction_counter++;
 
+            //TODO REMOVER
+            System.out.println(record.getId());
             CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getId());
             
+            //TODO REMOVER
             System.out.println("\nset future:" + requestStatus + "\n");
 
             if (future != null) {

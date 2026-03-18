@@ -26,4 +26,12 @@ public class BlockRecord {
     public int size() {
         return transactions.size();
     }
+
+    @Override
+    public String toString() {
+        return "BlockRecord{" +
+            "blockNumber=" + blockNumber +
+            ", transactions=" + transactions +
+            '}';
+    }
 }
