@@ -1,22 +1,33 @@
 package pt.tecnico.blockchainist.client.grpc;
 
 import io.grpc.stub.StreamObserver;
-// TODO 
+import pt.tecnico.blockchainist.client.*;
+import io.grpc.StatusRuntimeException;
+import pt.tecnico.blockchainist.contract.*;
+
 public class ClientAsyncResponseObserver<Response> implements StreamObserver<Response> {
     
-    public ClientAsyncResponseObserver() {
+    private CommandProcessor processor;
+    private String uuid;
+
+    public ClientAsyncResponseObserver(CommandProcessor processor, String uuid) {
+        this.processor = processor;
+        this.uuid = uuid;
     }
 
     @Override
     public void onNext(Response response) {
         //Aqui deve estar o código a executar no caso de resposta normal
-        System.out.println("OK ");
+        String extraOutput = null;
+        if (response instanceof ReadBalanceResponse){
+            extraOutput = String.valueOf(((ReadBalanceResponse) response).getBalance());
+        }
+        processor.concludeOperation(uuid, extraOutput);
     }
 
     @Override
     public void onError(Throwable throwable) {
-        //Aqui deve estar o código a executar no caso de resposta de erro
-        System.out.println("Received error: " + throwable);
+        processor.handleError(this.uuid, (StatusRuntimeException) throwable );
     }
 
     @Override

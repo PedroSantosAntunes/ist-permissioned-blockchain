@@ -12,11 +12,16 @@ import pt.tecnico.blockchainist.record.*;
 public class SequencerState {
 
     private final ArrayList<BlockRecord> blockChain = new ArrayList<BlockRecord>();
-    private static final int MAX_TRANSACTIONS_PER_BLOCK = 5;
+    private static final int MAX_TRANSACTIONS_PER_BLOCK = 1;
     private int next_block_number = 1;
 
     private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
     private int global_transaction_counter = 1;
+
+    private final int CREATE_BLOCK_SECONDS = 3;
+    private final Object timerLock = new Object();
+    private Thread timerThread;
+    private boolean resetTimer = false;
 
     public SequencerState(){
     }
@@ -42,13 +47,22 @@ public class SequencerState {
      * @param sequence_number
      * @return
      */
-    public synchronized BlockRecord deliverBlock(int sequence_number){
-
-        if (sequence_number <= 0 || sequence_number > blockChain.size()) {
+    public synchronized BlockRecord deliverBlock(int blockNumber){
+        if (blockNumber <= 0) {
             return null;
         }
 
-        return blockChain.get(sequence_number);
+        while (blockNumber > blockChain.size()) {
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                //TODO tratamento de erros????!!!!
+                Thread.currentThread().interrupt();
+                return null;
+            }
+        }
+
+        return blockChain.get(blockNumber - 1);
     }
 
     private void addPendingTransaction(TransactionRecord tx) {
@@ -57,11 +71,16 @@ public class SequencerState {
         if (pendingTransactions.size() >= MAX_TRANSACTIONS_PER_BLOCK) {
             createBlock();
         }
+        
     }
 
     private void createBlock() {
         if (pendingTransactions.isEmpty()) {
             return;
+        }
+        synchronized (timerLock) {
+            resetTimer = true;
+            timerLock.notify(); // wakes countdown thread to reset
         }
 
         List<TransactionRecord> blockTransactions = new ArrayList<>();
@@ -72,7 +91,32 @@ public class SequencerState {
 
         BlockRecord block = new BlockRecord(next_block_number++, blockTransactions);
         blockChain.add(block);
+        notifyAll();
 
         Debug.log("New block added to blockchain:\n" + block);
+    }
+
+    private void startCountdownThread() {
+        timerThread = new Thread(() -> {
+            while (true) {
+                synchronized (timerLock) {
+                    resetTimer = false;
+                    try {
+                        // Wait 5 seconds unless resetTimer becomes true
+                        timerLock.wait(CREATE_BLOCK_SECONDS * 1000);
+                        if (!resetTimer) {
+                            synchronized (this) {
+                                createBlock();
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break; // exit thread
+                    }
+                }
+            }
+        });
+        timerThread.setDaemon(true);
+        timerThread.start();
     }
 }

@@ -9,6 +9,7 @@ import io.grpc.Metadata;
 import io.grpc.stub.MetadataUtils;
 import pt.tecnico.blockchainist.client.grpc.*;
 import java.util.concurrent.TimeUnit;
+import pt.tecnico.blockchainist.client.*;
 
 public class ClientNodeService {
 
@@ -17,9 +18,11 @@ public class ClientNodeService {
 	private NodeServiceGrpc.NodeServiceStub asyncStub;
 	private String organization;
 	
-	private final static long TIME_OUT_SECONDS = 2;
-	static final Metadata.Key<String> DELAY_HEADER_KEY =
-        Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);// TODO: PRIVATE?
+	private CommandProcessor processor;
+
+	private final static long TIME_OUT_SECONDS = 6;
+	private static final Metadata.Key<String> DELAY_HEADER_KEY =
+        Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);
 
 	public ClientNodeService(String host, int port, String organization) {
         final String target = host + ":" + port;
@@ -50,7 +53,7 @@ public class ClientNodeService {
 			asyncStub
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-				.createWallet(request, new ClientAsyncResponseObserver<CreateWalletResponse>());
+				.createWallet(request, new ClientAsyncResponseObserver<CreateWalletResponse>(this.processor, uuid));
 		}
 	}
 
@@ -74,11 +77,11 @@ public class ClientNodeService {
 			asyncStub
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-				.deleteWallet(request, new ClientAsyncResponseObserver<DeleteWalletResponse>());
+				.deleteWallet(request, new ClientAsyncResponseObserver<DeleteWalletResponse>(this.processor, uuid));
 		}
 	}
 
-	public long readBalance(String walletId, Integer delay, Boolean isBlocking){
+	public long readBalance(String uuid, String walletId, Integer delay, Boolean isBlocking){
 		ReadBalanceRequest request = ReadBalanceRequest.newBuilder()
 			.setWalletId(walletId)
 			.build();
@@ -96,7 +99,7 @@ public class ClientNodeService {
 			asyncStub
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-				.readBalance(request, new ClientAsyncResponseObserver<ReadBalanceResponse>());
+				.readBalance(request, new ClientAsyncResponseObserver<ReadBalanceResponse>(this.processor, uuid));
 		}
 		return -1L; // Placeholder return value for async case
 	}
@@ -123,7 +126,7 @@ public class ClientNodeService {
 			asyncStub
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-				.transfer(request, new ClientAsyncResponseObserver<TransferResponse>());
+				.transfer(request, new ClientAsyncResponseObserver<TransferResponse>(this.processor, uuid));
 		}
 	}
 
@@ -146,11 +149,14 @@ public class ClientNodeService {
 		channel.shutdownNow();
 	}
 
-	// for now this is only for blocking stubs // TODO: WHAT PEDRO???
 	private ClientInterceptor withDelayHeader(Integer nodeDelay) {
 		Metadata metadata = new Metadata();
 		metadata.put(DELAY_HEADER_KEY, String.valueOf(nodeDelay));
 
 		return MetadataUtils.newAttachHeadersInterceptor((metadata));
+	}
+
+	public void setProcessor(CommandProcessor processor) {
+		this.processor = processor;
 	}
 }

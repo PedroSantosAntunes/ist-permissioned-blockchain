@@ -1,10 +1,14 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 public class Wallet {
 
     private String walletId;
     private String userId;
     private long balance;
+
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Wallet(String walletId, String userId, long balance){
         this.walletId = walletId;
@@ -27,6 +31,14 @@ public class Wallet {
 
     public void setBalance(long newBalance){
         this.balance = newBalance;
+    }
+
+    public ReentrantReadWriteLock.ReadLock readLock() {
+        return lock.readLock();
+    }
+
+    public ReentrantReadWriteLock.WriteLock writeLock() {
+        return lock.writeLock();
     }
 
     @Override

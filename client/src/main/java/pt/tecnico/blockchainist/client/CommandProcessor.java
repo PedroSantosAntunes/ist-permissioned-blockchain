@@ -126,7 +126,7 @@ public class CommandProcessor {
 
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? CREATE_BLOCKING : CREATE_ASYNC;
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 3);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 3);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
@@ -143,7 +143,7 @@ public class CommandProcessor {
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? DELETE_BLOCKING : DELETE_ASYNC;
         
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 3);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 3);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -162,7 +162,7 @@ public class CommandProcessor {
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? BALANCE_BLOCKING : BALANCE_ASYNC; 
         
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 2);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 2);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -181,7 +181,7 @@ public class CommandProcessor {
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? TRANSFER_BLOCKING : TRANSFER_ASYNC;
 
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split, isBlocking, 5);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 5);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
@@ -212,17 +212,16 @@ public class CommandProcessor {
                     node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), true);
                     break;
                 case BALANCE_ASYNC:
-                    node.readBalance(request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), false);
+                    node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), false);
                     break;
                 case BALANCE_BLOCKING:
-                    long balance = node.readBalance(request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), true);
+                    long balance = node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), true);
                     resultToPrint = String.valueOf(balance);
                     break;
             }
 
             if (request.getIsBlocking()) {
-                pendingRequests.remove(request.getUuid());
-                displaySuccessOperation(request.getCommandNumber(),"OK", resultToPrint);
+                concludeOperation(request.getUuid(), resultToPrint);
             }
 
         } catch (StatusRuntimeException error) {
@@ -230,6 +229,45 @@ public class CommandProcessor {
         }
 
     }
+
+    public void concludeOperation(String uuid, String resultToPrint){
+        PendingRequest request = pendingRequests.get(uuid);
+        pendingRequests.remove(uuid);
+        displaySuccessOperation(request.getCommandNumber(),"OK", resultToPrint);
+    }
+
+    public void handleError(String uuid, StatusRuntimeException e) {
+        PendingRequest request = pendingRequests.get(uuid); 
+        
+        switch (e.getStatus().getCode()) {
+            
+            case UNAVAILABLE, DEADLINE_EXCEEDED, CANCELLED:
+                if(request.tryNextNode(nodes.size()))
+                    callNode(request); 
+                else {
+                    pendingRequests.remove(uuid);
+                    displayErrorOperation(request.getCommandNumber(), "every node failed");
+                }
+                break;
+
+            default:
+                pendingRequests.remove(uuid);
+                displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription()); 
+                break;
+        }
+    }
+
+    public synchronized static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {
+        System.out.println(statusMessage + " " + commandNumber);
+        if (extraOutput != null) {
+            System.out.println(extraOutput);
+        }
+    }
+
+    private synchronized static void displayErrorOperation(Long commandNumber, String statusMessage) {
+        System.err.println(statusMessage + " " + commandNumber);
+    }
+
     /**
      * Request current blockchain state (leBlockchain)
      * @param split
@@ -418,38 +456,4 @@ public class CommandProcessor {
                 "- P <integer>\n" +
                 "- X\n");
     }
-
-    private static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {
-        System.out.println(statusMessage + " " + commandNumber);
-        if (extraOutput != null) {
-            System.out.println(extraOutput);
-        }
-    }
-
-    private static void displayErrorOperation(Long commandNumber, String statusMessage) {
-        System.err.println(statusMessage + " " + commandNumber);
-    }
-
-
-    private void handleError(String uuid, StatusRuntimeException e) {
-        PendingRequest request = pendingRequests.get(uuid); 
-        
-        switch (e.getStatus().getCode()) {    
-            
-            case UNAVAILABLE, DEADLINE_EXCEEDED, CANCELLED:
-                if(request.tryNextNode(nodes.size()))
-                    callNode(request); 
-                else {
-                    pendingRequests.remove(uuid);
-                    displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription());
-                }
-                break;
-
-            default:
-                pendingRequests.remove(uuid);
-                displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription()); 
-                break;
-        }
-    }
-
 }

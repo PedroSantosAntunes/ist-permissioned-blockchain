@@ -51,7 +51,7 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
 
         int block_number = request.getBlockNumber();
 
-        Debug.log("\n-----\nSequencer: Deliver transaction request received!\n" + request);
+        Debug.log("\n-----\nSequencer: Deliver block request received!\n" + request);
 
         BlockRecord record = state.deliverBlock(block_number);
         Block block = BlockRecordToBlock.blockRecordToBlock(record);

@@ -50,6 +50,11 @@ public class ClientMain {
             }
 
             CommandProcessor processor = new CommandProcessor(nodes);
+
+            for(ClientNodeService node : nodes) {
+                node.setProcessor(processor);
+            }
+            
             processor.userInputLoop();
         
         } finally {

@@ -6,6 +6,7 @@ import io.grpc.ServerBuilder;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.node.grpc.NodeServiceImpl;
+import pt.tecnico.blockchainist.node.domain.BlockFetcher;
 
 import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.ServerInterceptors;
@@ -73,6 +74,10 @@ public class NodeMain {
 
         NodeState state = new NodeState(sequencer);
         
+        BlockFetcher fetcher = new BlockFetcher(state);
+        fetcher.setDaemon(true);
+        fetcher.start();
+
         final BindableService impl = new NodeServiceImpl(state);
 
         Server server = ServerBuilder.forPort(nodePort)

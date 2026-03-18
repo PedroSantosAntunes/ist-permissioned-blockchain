@@ -1,5 +1,7 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import pt.tecnico.blockchainist.debug.Debug;
+
 public class BlockFetcher extends Thread {
     private final NodeState state;
 
@@ -10,7 +12,7 @@ public class BlockFetcher extends Thread {
     @Override
     public void run() {
         while(!isInterrupted()) {
-            state.
+            state.getBlock();
         }
     }
 }
