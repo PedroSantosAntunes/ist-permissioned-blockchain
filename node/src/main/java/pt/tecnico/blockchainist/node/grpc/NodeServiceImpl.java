@@ -32,7 +32,6 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Create wallet request received!\n" + request);
 
         InternalResponseStatus result = state.createWallet(uuid, userId, walletId);  
-System.out.println("Node: result:" + result);
 
         if(!isError(result, responseObserver)) {
             CreateWalletResponse response = CreateWalletResponse.getDefaultInstance();
@@ -51,7 +50,6 @@ System.out.println("Node: result:" + result);
         Debug.log("\n-----\nNode: Delete wallet request received!\n" + request);
 
         InternalResponseStatus result = state.deleteWallet(uuid, userId, walletId);
-        System.out.println("Node: result:" + result);
         if(!isError(result, responseObserver)) {
             DeleteWalletResponse response = DeleteWalletResponse.getDefaultInstance();
             Debug.log("\n-----\nNode: Sending delete wallet response!\n" + response);
@@ -71,7 +69,6 @@ System.out.println("Node: result:" + result);
         Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
 
         InternalResponseStatus result = state.transfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
-        System.out.println("Node: result:" + result);
         if(!isError(result, responseObserver)) {
             TransferResponse response = TransferResponse.getDefaultInstance();
             Debug.log("\n-----\nNode: Sending transfer response!\n" + response);
