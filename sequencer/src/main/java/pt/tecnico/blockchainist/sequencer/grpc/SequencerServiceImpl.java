@@ -7,7 +7,6 @@ import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.grpc.BlockRecordToBlock;
 import pt.tecnico.blockchainist.grpc.RecordToTransaction;
 import pt.tecnico.blockchainist.grpc.TransactionToRecord;
-import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 import pt.tecnico.blockchainist.record.*;
 

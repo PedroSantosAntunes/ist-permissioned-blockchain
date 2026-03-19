@@ -78,6 +78,8 @@
 					<mainClass>${mainclass}</mainClass>
 					<arguments>
 						<argument>${sequencer.port}</argument>
+						<argument>${sequencer.N}</argument>
+						<argument>${sequencer.T}</argument>
 					</arguments>
 				</configuration>
 			</plugin>

@@ -4,7 +4,6 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.record.*;
-import pt.tecnico.blockchainist.block.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
 import pt.tecnico.blockchainist.grpc.*;
 

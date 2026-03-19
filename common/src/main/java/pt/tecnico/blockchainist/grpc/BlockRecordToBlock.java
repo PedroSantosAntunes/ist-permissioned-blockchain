@@ -1,7 +1,7 @@
 package pt.tecnico.blockchainist.grpc;
 
-import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.contract.Block;
+import pt.tecnico.blockchainist.record.BlockRecord;
 import pt.tecnico.blockchainist.record.TransactionRecord;
 
 public abstract class BlockRecordToBlock {

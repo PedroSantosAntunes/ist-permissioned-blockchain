@@ -10,14 +10,14 @@ public abstract class TransactionRecord {
     }
 
     private int sequence_number = -1;
-    private String transactionId;
+    private String transactionUuid;
 
-    public TransactionRecord(String UUID){
-        this.transactionId = UUID;
+    public TransactionRecord(String Uuid){
+        this.transactionUuid = Uuid;
     }
 
-    public String getId() {
-        return this.transactionId;
+    public String getUuid() {
+        return this.transactionUuid;
     }
 
     public int getSequenceNumber() {

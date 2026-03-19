@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
-import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
@@ -59,8 +58,7 @@ public class NodeState {
         sequencer.broadcastCreateWallet(uuid, userId, walletId);
 
         try {
-            InternalResponseStatus test = future.get();
-            return test;
+            return future.get();
         } catch (Exception e) {
             //TODO
             return InternalResponseStatus.OK;
@@ -133,7 +131,12 @@ public class NodeState {
     public void getBlock () { 
         Debug.log("\n-----\nNode: Requesting block from sequencer:" + (node_block_counter + 1) + "\n");
         BlockRecord block = sequencer.deliverBlock(node_block_counter + 1);
-        
+
+        if(block.getBlockNumber() == -1) {
+            Debug.log("\n-----\nNode: Error fetching block from sequencer\n");
+            return;
+        }
+
         Debug.log("\n-----\nNode: Received block from sequencer:" + (node_block_counter + 1) + "\n");
         executeBlock(block);
     }
@@ -149,13 +152,13 @@ public class NodeState {
             //TODO precisa lock?
             node_transaction_counter++;
 
-            CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getId());
+            CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getUuid());
 
             if (future != null) {
                 future.complete(requestStatus);
             }
 
-            completedTransactions.put(record.getId(), requestStatus);
+            completedTransactions.put(record.getUuid(), requestStatus);
         }
 
         blocks.add(block);

@@ -3,9 +3,9 @@ package pt.tecnico.blockchainist.grpc;
 import java.util.ArrayList;
 import java.util.List;
 
-import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.contract.Block;
 import pt.tecnico.blockchainist.contract.Transaction;
+import pt.tecnico.blockchainist.record.BlockRecord;
 import pt.tecnico.blockchainist.record.TransactionRecord;
 
 public abstract class BlockToBlockRecord {

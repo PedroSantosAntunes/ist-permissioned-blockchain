@@ -9,25 +9,26 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
 
 public class SequencerState {
 
     private final ArrayList<BlockRecord> blockChain = new ArrayList<BlockRecord>();
-    private static final int MAX_TRANSACTIONS_PER_BLOCK = 5;
+    private int MAX_BLOCK_SIZE;
+    private int CREATE_BLOCK_SECONDS;
+    
+    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
+
+    private int global_transaction_counter = 1;
     private int next_block_number = 1;
 
-    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
-    private int global_transaction_counter = 1;
-
-    private final int CREATE_BLOCK_SECONDS = 3;
-    
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> scheduledTask;
 
-    public SequencerState(){
+    public SequencerState(int N, int T){
+        this.MAX_BLOCK_SIZE = N;
+        this.CREATE_BLOCK_SECONDS = T;
         startTimer();
     }
 
@@ -52,18 +53,19 @@ public class SequencerState {
      * @param sequence_number
      * @return
      */
-    public synchronized BlockRecord deliverBlock(int blockNumber){
+    public BlockRecord deliverBlock(int blockNumber){
         if (blockNumber <= 0) {
             return null;
         }
 
-        while (blockNumber > blockChain.size()) {
-            try {
+        int size = blockChain.size();
+
+        while (blockNumber > size) {
+            try{
+                //
                 wait();
             } catch (InterruptedException e) {
-                //TODO tratamento de erros????!!!!
-                Thread.currentThread().interrupt();
-                return null;
+                return new BlockRecord(-1, new ArrayList<TransactionRecord>());
             }
         }
 
@@ -73,43 +75,39 @@ public class SequencerState {
     private void addPendingTransaction(TransactionRecord tx) {
         pendingTransactions.addLast(tx);
 
-        if (pendingTransactions.size() >= MAX_TRANSACTIONS_PER_BLOCK) {
+        if (pendingTransactions.size() >= MAX_BLOCK_SIZE) {
             createBlock();
         }
-        
     }
 
-    private void createBlock() {
+    private synchronized void createBlock() {
         
         if (pendingTransactions.isEmpty()) {
             startTimer();
             return;
         }
 
-
         List<TransactionRecord> blockTransactions = new ArrayList<>();
 
-        while (!pendingTransactions.isEmpty() && blockTransactions.size() < MAX_TRANSACTIONS_PER_BLOCK) {
+        while (!pendingTransactions.isEmpty() && blockTransactions.size() < MAX_BLOCK_SIZE) {
             blockTransactions.add(pendingTransactions.removeFirst());
         }
 
         BlockRecord block = new BlockRecord(next_block_number++, blockTransactions);
+        
         blockChain.add(block);
+
+        //
         notifyAll();
 
         startTimer();
         Debug.log("New block added to blockchain:\n" + block);
     }
 
-    private synchronized void startTimer() {
+    private void startTimer() {
         if (scheduledTask != null && !scheduledTask.isDone()) {
             scheduledTask.cancel(false);
         }
-
-        scheduledTask = scheduler.schedule(() -> {
-            synchronized (SequencerState.this) {
-                createBlock();
-            }
-        }, CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
+        scheduledTask = scheduler.schedule(() -> createBlock(), CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
     }
 }

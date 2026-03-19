@@ -1,10 +1,8 @@
-package pt.tecnico.blockchainist.block;
+package pt.tecnico.blockchainist.record;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import pt.tecnico.blockchainist.record.TransactionRecord;
 
 public class BlockRecord {
     private final int blockNumber;

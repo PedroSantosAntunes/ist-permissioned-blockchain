@@ -15,7 +15,7 @@ public class SequencerMain {
         Debug.log("Debug is ON");
 
         // check arguments
-        if (args.length < 1) {
+        if (args.length < 3) {
             System.err.println("Argument(s) missing!");
             printUsage();
             return;
@@ -34,8 +34,35 @@ public class SequencerMain {
             return;
         } 
 
+        int blockSize = -1;
+        try {
+            blockSize = Integer.parseInt(args[1]);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid block size N (" + args[1] + ") in argument");
+            printUsage();
+            return;
+        }
+        if(blockSize < 0){
+            System.err.println("Block size N out of range (0 - 2^32-1): " + blockSize);
+            printUsage();
+            return;
+        }
 
-        SequencerState state = new SequencerState();
+        int createBlockTimeout = -1;
+        try {
+            createBlockTimeout = Integer.parseInt(args[2]);
+        } catch (NumberFormatException e) {
+            System.err.println("Invalid create block timeout T (" + args[2] + ") in argument");
+            printUsage();
+            return;
+        }
+        if(createBlockTimeout < 0){
+            System.err.println("create block timeout T out of range (0 < T): " + createBlockTimeout);
+            printUsage();
+            return;
+        }
+
+        SequencerState state = new SequencerState(blockSize, createBlockTimeout);
 
         final BindableService impl = new SequencerServiceImpl(state);
 
@@ -47,6 +74,6 @@ public class SequencerMain {
 
 
     private static void printUsage() {
-        System.err.println("Usage: mvn exec:java -Dexec.args=\"<port>\"");
+        System.err.println("Usage: mvn exec:java -Dexec.args=\"<port> <N> <T>\"");
     }
 }

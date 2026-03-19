@@ -4,8 +4,8 @@ public class DeleteWalletRecord extends TransactionRecord {
     private String userId;
     private String walletId;
 
-    public DeleteWalletRecord(String transactionId, String userId, String walletId){
-        super(transactionId);
+    public DeleteWalletRecord(String transactionUuid, String userId, String walletId){
+        super(transactionUuid);
         this.userId = userId;
         this.walletId = walletId;
     }

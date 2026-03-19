@@ -27,7 +27,7 @@ public abstract class RecordToTransaction {
         return Transaction.newBuilder()
                 .setCreateWallet(
                     CreateWalletRequest.newBuilder()
-                        .setUuid(record.getId())
+                        .setUuid(record.getUuid())
                         .setUserId(record.getUserId())
                         .setWalletId(record.getWalletId())
                         .build()
@@ -38,7 +38,7 @@ public abstract class RecordToTransaction {
         return Transaction.newBuilder()
                 .setDeleteWallet(
                     DeleteWalletRequest.newBuilder()
-                        .setUuid(record.getId())
+                        .setUuid(record.getUuid())
                         .setUserId(record.getUserId())
                         .setWalletId(record.getWalletId())
                         .build()
@@ -49,7 +49,7 @@ public abstract class RecordToTransaction {
         return Transaction.newBuilder()
                 .setTransfer(
                     TransferRequest.newBuilder()
-                        .setUuid(record.getId())
+                        .setUuid(record.getUuid())
                         .setSrcUserId(record.getSrcUserId())
                         .setSrcWalletId(record.getSrcWalletId())
                         .setDstWalletId(record.getDstWalletId())
