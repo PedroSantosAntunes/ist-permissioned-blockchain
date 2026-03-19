@@ -80,9 +80,9 @@ public class SequencerState {
     }
 
     private void createBlock() {
-        stopTimer();
-        startTimer();
+        
         if (pendingTransactions.isEmpty()) {
+            startTimer();
             return;
         }
 
@@ -97,7 +97,7 @@ public class SequencerState {
         blockChain.add(block);
         notifyAll();
 
-
+        startTimer();
         Debug.log("New block added to blockchain:\n" + block);
     }
 
@@ -108,16 +108,8 @@ public class SequencerState {
 
         scheduledTask = scheduler.schedule(() -> {
             synchronized (SequencerState.this) {
-                System.out.println("biuruririri");
                 createBlock();
             }
         }, CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
-    }
-
-    private void stopTimer() {
-        if (scheduledTask != null) {
-            scheduledTask.cancel(false);
-            scheduledTask = null;
-        }
     }
 }
