@@ -4,6 +4,10 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import pt.tecnico.blockchainist.block.BlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
@@ -19,12 +23,11 @@ public class SequencerState {
     private int global_transaction_counter = 1;
 
     private final int CREATE_BLOCK_SECONDS = 3;
-    private final Object timerLock = new Object();
-    private Thread timerThread;
-    private boolean resetTimer = false;
+    
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private ScheduledFuture<?> scheduledTask;
 
     public SequencerState(){
-        startCountdownThread();
     }
 
     /**
@@ -79,10 +82,8 @@ public class SequencerState {
         if (pendingTransactions.isEmpty()) {
             return;
         }
-        synchronized (timerLock) {
-            resetTimer = true;
-            timerLock.notify(); // wakes countdown thread to reset
-        }
+
+        stopTimer();
 
         List<TransactionRecord> blockTransactions = new ArrayList<>();
 
@@ -94,30 +95,27 @@ public class SequencerState {
         blockChain.add(block);
         notifyAll();
 
+        startTimer();
+
         Debug.log("New block added to blockchain:\n" + block);
     }
 
-    private void startCountdownThread() {
-        timerThread = new Thread(() -> {
-            while (true) {
-                synchronized (timerLock) {
-                    resetTimer = false;
-                    try {
-                        // Wait 5 seconds unless resetTimer becomes true
-                        timerLock.wait(CREATE_BLOCK_SECONDS * 1000);
-                        if (!resetTimer) {
-                            synchronized (this) {
-                                createBlock();
-                            }
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break; // exit thread
-                    }
-                }
+    private synchronized void startTimer() {
+        if (scheduledTask != null && !scheduledTask.isDone()) {
+            scheduledTask.cancel(false);
+        }
+
+        scheduledTask = scheduler.schedule(() -> {
+            synchronized (SequencerState.this) {
+                createBlock();
             }
-        });
-        timerThread.setDaemon(true);
-        timerThread.start();
+        }, CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void stopTimer() {
+        if (scheduledTask != null) {
+            scheduledTask.cancel(false);
+            scheduledTask = null;
+        }
     }
 }
