@@ -38,6 +38,7 @@ public class CommandProcessor {
     private final AtomicLong commandCounter = new AtomicLong(0);
     private final ArrayList<ClientNodeService> nodes;
     private final ConcurrentHashMap<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>(); // <UUID, PENDING REQUEST>
+    private int lastReadBlock = 0;
 
     public CommandProcessor(ArrayList<ClientNodeService> nodes) {
         this.nodes = nodes;
@@ -212,10 +213,10 @@ public class CommandProcessor {
                     node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), true);
                     break;
                 case BALANCE_ASYNC:
-                    node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), false);
+                    node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), lastReadBlock, false);
                     break;
                 case BALANCE_BLOCKING:
-                    long balance = node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), true);
+                    long balance = node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), lastReadBlock, true);
                     resultToPrint = String.valueOf(balance);
                     break;
             }
@@ -267,6 +268,14 @@ public class CommandProcessor {
     private synchronized static void displayErrorOperation(Long commandNumber, String statusMessage) {
         System.err.println(statusMessage + " " + commandNumber);
     }
+
+    // TODO locks ou sychronized pq podem existir threads async a retornar 
+    // valores mais recentes e nao queremos dois a chamar ao mesmo tempo???
+    public synchronized void setLastReadBlock(int newReadBlock) {
+		if (newReadBlock > lastReadBlock){
+			lastReadBlock = newReadBlock;
+		}
+	}
 
     /**
      * Request current blockchain state (leBlockchain)

@@ -17,10 +17,12 @@ message DeleteWalletResponse {
 
 message ReadBalanceRequest {
   string walletId = 1;
+  int32 block_number = 2;
 }
 
 message ReadBalanceResponse {
   uint64 balance = 1;
+  int32 block_number = 2;
 }
 
 message TransferResponse {

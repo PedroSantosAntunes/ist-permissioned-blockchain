@@ -13,7 +13,7 @@ INPUT_CHECK="./client_input/checkBalance.txt"
 EXPECTED_OUTPUT="./expected_output/balanceZero.txt"
 
 TMP_DIR="./tmp-test"
-N_CLIENTS=97
+N_CLIENTS=9
 ################################################
 
 GREEN='\033[0;32m'

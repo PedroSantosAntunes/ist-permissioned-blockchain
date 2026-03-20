@@ -20,7 +20,9 @@ public class ClientAsyncResponseObserver<Response> implements StreamObserver<Res
         //Aqui deve estar o código a executar no caso de resposta normal
         String extraOutput = null;
         if (response instanceof ReadBalanceResponse){
-            extraOutput = String.valueOf(((ReadBalanceResponse) response).getBalance());
+            ReadBalanceResponse readResponse = (ReadBalanceResponse) response;
+            extraOutput = String.valueOf(readResponse.getBalance());
+            processor.setLastReadBlock(readResponse.getBlockNumber());
         }
         processor.concludeOperation(uuid, extraOutput);
     }

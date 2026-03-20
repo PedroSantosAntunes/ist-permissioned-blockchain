@@ -15,7 +15,6 @@ message BroadcastRequest {
 }
 
 message BroadcastResponse {
-  int32 sequence_number = 1;
 }
 
 

@@ -79,15 +79,15 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     @Override
     public void readBalance(ReadBalanceRequest request, StreamObserver<ReadBalanceResponse> responseObserver) {
         String walletId = request.getWalletId();
-
+        int requestedBlockNumber = request.getBlockNumber();
         Debug.log("\n-----\nNode: Read balance request received!\n" + request);
 
-        long balance = state.readBalance(walletId);
-        if (balance == -1L) {
+        NodeState.ReadResult result = state.readBalance(walletId, requestedBlockNumber);
+        if (result.balance() == -1L) {
             responseObserver.onError(NOT_FOUND.withDescription("Not Found Wallet: wallet does not exist").asRuntimeException());
         }
         else {
-            ReadBalanceResponse response = ReadBalanceResponse.newBuilder().setBalance(balance).build();
+            ReadBalanceResponse response = ReadBalanceResponse.newBuilder().setBalance(result.balance()).setBlockNumber(result.blockNumber()).build();
             Debug.log("\n-----\nNode: Sending read balance response!\n" + response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
@@ -112,11 +112,12 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
                 builder.addTransactions(tx);
             }
             
-            GetBlockchainStateResponse response = builder.build();
-            Debug.log("\n-----\nNode: Sending get blockchain state response!\n" + response);
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
         }
+
+        GetBlockchainStateResponse response = builder.build();
+        Debug.log("\n-----\nNode: Sending get blockchain state response!\n" + response);
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     private boolean isError(InternalResponseStatus status, StreamObserver<?> responseObserver) {

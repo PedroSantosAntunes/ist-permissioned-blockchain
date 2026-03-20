@@ -31,9 +31,9 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         
         TransactionRecord record =  TransactionToRecord.transactionToRecord(transaction);
 
-        int sequence_number = state.broadcast(record);
+        state.broadcast(record);
 
-        BroadcastResponse response = BroadcastResponse.newBuilder().setSequenceNumber(sequence_number).build();
+        BroadcastResponse response = BroadcastResponse.newBuilder().build();
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();

@@ -81,8 +81,9 @@ public class ClientNodeService {
 		}
 	}
 
-	public long readBalance(String uuid, String walletId, Integer delay, Boolean isBlocking){
+	public long readBalance(String uuid, String walletId, Integer delay, int lastReadBlock, Boolean isBlocking){
 		ReadBalanceRequest request = ReadBalanceRequest.newBuilder()
+			.setBlockNumber(lastReadBlock)
 			.setWalletId(walletId)
 			.build();
 
@@ -91,10 +92,13 @@ public class ClientNodeService {
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
 		long balance;
 		if (isBlocking){
-			return syncStub
-					.withInterceptors(delayInterceptor)
-					.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-					.readBalance(request).getBalance();
+			ReadBalanceResponse response = syncStub
+							.withInterceptors(delayInterceptor)
+							.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+							.readBalance(request);
+			
+			processor.setLastReadBlock(response.getBlockNumber());
+
 		} else {
 			asyncStub
 				.withInterceptors(delayInterceptor)
@@ -159,4 +163,6 @@ public class ClientNodeService {
 	public void setProcessor(CommandProcessor processor) {
 		this.processor = processor;
 	}
+
+	
 }

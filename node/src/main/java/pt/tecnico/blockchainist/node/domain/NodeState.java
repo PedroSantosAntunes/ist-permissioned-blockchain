@@ -1,5 +1,7 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import static io.grpc.MethodDescriptor.newBuilder;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +16,11 @@ import pt.tecnico.blockchainist.record.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
 
 public class NodeState {
-    //TODO provavelmente 
-    private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
     
+    public record ReadResult(long balance, int blockNumber) {}
+    
+    private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
+
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
     //TODO ArrayList mau, mudar
     private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
@@ -24,10 +28,12 @@ public class NodeState {
     private final Map<String, CompletableFuture<InternalResponseStatus>> pendingTransactions = new ConcurrentHashMap<>();
     private final Map<String, InternalResponseStatus> completedTransactions = new ConcurrentHashMap<>();
 
+    private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
+
     private int node_transaction_counter = 0;
     private int node_block_counter = 0;
     
-    private final Object stateLock = new Object();
+    private final Object blocksLock = new Object();
 
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
@@ -36,8 +42,8 @@ public class NodeState {
     private final NodeSequencerService sequencer;
 
     public NodeState(NodeSequencerService sequencer) {
+        
         Wallet wallet = new Wallet(BC_WALLET, BC_NAME, BC_INIT_BALANCE);
-
         wallets.put(BC_WALLET, wallet);
     
         this.sequencer = sequencer;
@@ -60,8 +66,7 @@ public class NodeState {
         try {
             return future.get();
         } catch (Exception e) {
-            //TODO
-            return InternalResponseStatus.OK;
+            return InternalResponseStatus.UNKNOWN;
         }  
     }
 
@@ -81,8 +86,7 @@ public class NodeState {
         try {
             return future.get();
         } catch (Exception e) {
-            //TODO
-            return InternalResponseStatus.OK;
+            return InternalResponseStatus.UNKNOWN;
         } 
     }
 
@@ -102,28 +106,37 @@ public class NodeState {
         try {
             return future.get();
         } catch (Exception e) {
-            //TODO
-            return InternalResponseStatus.OK;
+            return InternalResponseStatus.UNKNOWN;
         }
     }
 
-    //TODO readBalance pode ler valor stale?
-    //EX: Wallet wallet = wallet... a wallet é deleted mas ele ainda tem a referencia, le o valor do balance antes de esta ser apagada mesmo que ja tenha sido apagada.
-    public long readBalance(String walletId) {
-        Wallet wallet = wallets.getOrDefault(walletId, null);
-        if (wallet == null){ return -1L; }
-        wallet.readLock().lock();
+    public ReadResult readBalance(String walletId, int blockNumber) {
 
+        if (node_block_counter < blockNumber) { 
+            CompletableFuture<Void> future = pendingBlock.computeIfAbsent(blockNumber, k -> new CompletableFuture<>());
+            try {
+                future.get();
+                
+            }
+            catch (Exception e) {
+                return new ReadResult(-1L, -1);
+            }   
+        }
+
+        Wallet wallet = wallets.getOrDefault(walletId, null);
+        if (wallet == null){ return new ReadResult(-1L, -1); }
+
+        wallet.readLock().lock();
         try {
-            return wallet.getBalance();
+            return new ReadResult(wallet.getBalance(), blockNumber);
         } finally {
             wallet.readLock().unlock();
         }
     }
 
-    public ArrayList<BlockRecord> getBlockchainState(){		
+    public ArrayList<BlockRecord> getBlockchainState(){
         // Avoids reading the list of transaction while another thread is changing it
-        synchronized (stateLock) {
+        synchronized (blocksLock) {
             return new ArrayList<>(blocks);
         }
     }
@@ -143,13 +156,11 @@ public class NodeState {
 	
 
     private void executeBlock(BlockRecord block) {
-        //TODO locks e paralelismo
         List<TransactionRecord> block_transactions = block.getTransactions();
 
         for (TransactionRecord record : block_transactions) {
             InternalResponseStatus requestStatus = executeTransaction(record);
 
-            //TODO precisa lock?
             node_transaction_counter++;
 
             CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getUuid());
@@ -160,9 +171,17 @@ public class NodeState {
 
             completedTransactions.put(record.getUuid(), requestStatus);
         }
+        synchronized (blocksLock) {
+            blocks.add(block);
+            node_block_counter = block.getBlockNumber();
+        } // todo check lock on everything or just add
+        CompletableFuture<Void> future = pendingBlock.remove(block.getBlockNumber());
+        if (future != null) {
+            future.complete(null);
+        }
+        
+        // node_block_counter++; 
 
-        blocks.add(block);
-        node_block_counter++;
     }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {
@@ -324,11 +343,6 @@ public class NodeState {
      * (if the current state allows this transaction to be executed)
      */
     private InternalResponseStatus canDeleteWallet(Wallet wallet, String userId) {
-        //TODO: ISTO NAO FAZ SENTIDO VER SE È PRECISO
-        // if (!userExists(userId)) {
-        //     System.err.println("User id does not exist: " + userId);
-        //     return InternalResponseStatus.USER_NOT_FOUND;
-        // }
         long balance = wallet.getBalance();
         if (!isZeroBalance(balance)) {
             System.err.println("Wallet id with balance other than 0: " + balance);
@@ -365,16 +379,6 @@ public class NodeState {
             return false;
         }
         return true;
-    }
-
-    //TODO: JA NAO USO?! VER OUTRO TODO
-    private boolean userExists(String userId) {
-        for (Wallet wallet : wallets.values()) {
-            if (wallet.getUserId().equals(userId)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean walletExists(String walletId) {
