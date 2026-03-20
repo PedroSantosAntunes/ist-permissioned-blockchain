@@ -213,7 +213,7 @@ public class NodeState {
                 future.complete(null);
             }
             blockCompleted.writeLock().unlock();
-        } // todo check lock on everything or just add
+        }
     }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {

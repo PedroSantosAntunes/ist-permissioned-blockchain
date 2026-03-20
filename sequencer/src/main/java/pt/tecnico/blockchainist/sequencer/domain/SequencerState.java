@@ -21,7 +21,7 @@ public class SequencerState {
 
     private final Map<Integer, BlockRecord> blockChain = new ConcurrentHashMap<>();
 
-    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>(); // Estrutura mudar?
+    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
 
     private int global_transaction_counter = 1;
     private int next_block_number = 1;
