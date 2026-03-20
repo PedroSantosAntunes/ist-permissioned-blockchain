@@ -1,13 +1,13 @@
 package pt.tecnico.blockchainist.node.domain;
 
-import static io.grpc.MethodDescriptor.newBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
@@ -22,11 +22,15 @@ public class NodeState {
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
-    //TODO ArrayList mau, mudar
+
     private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
 
     private final Map<String, CompletableFuture<InternalResponseStatus>> pendingTransactions = new ConcurrentHashMap<>();
     private final Map<String, InternalResponseStatus> completedTransactions = new ConcurrentHashMap<>();
+
+    private final ReentrantReadWriteLock transactionCompleted = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock blockCompleted = new ReentrantReadWriteLock();
+
 
     private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
 
@@ -50,78 +54,99 @@ public class NodeState {
     }
     
     public InternalResponseStatus createWallet(String uuid, String userId, String walletId) {
-        InternalResponseStatus completed = completedTransactions.get(uuid);
-        if (completed != null) {
-            return completed;
-        }
-        
-        InternalResponseStatus argsInternalResponseStatus = validateCreateWalletArgs(userId, walletId);
-                
-        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
+        CompletableFuture<InternalResponseStatus> future;
 
-        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        transactionCompleted.readLock().lock();
+        try {
+            InternalResponseStatus completed = completedTransactions.get(uuid);
+            if (completed != null) {
+                return completed;
+            }
+        
+            InternalResponseStatus argsInternalResponseStatus = validateCreateWalletArgs(userId, walletId);
+                
+            if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
+
+            future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        } finally {
+            transactionCompleted.readLock().unlock();
+        }
 
         sequencer.broadcastCreateWallet(uuid, userId, walletId);
 
         try {
             return future.get();
-        } catch (Exception e) {
+        } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
         }  
     }
 
     public InternalResponseStatus deleteWallet(String uuid, String userId, String walletId) {
-        
-        InternalResponseStatus completed = completedTransactions.get(uuid);
-        if (completed != null) {
-            return completed;
+        CompletableFuture<InternalResponseStatus> future;
+
+        transactionCompleted.readLock().lock();
+        try {
+            InternalResponseStatus completed = completedTransactions.get(uuid);
+            if (completed != null) {
+                return completed;
+            }
+
+            InternalResponseStatus argsInternalResponseStatus = validateDeleteWalletArgs(userId, walletId);
+            if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
+
+            future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        } finally {
+            transactionCompleted.readLock().unlock();
         }
 
-        InternalResponseStatus argsInternalResponseStatus = validateDeleteWalletArgs(userId, walletId);
-        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-
-        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
 
         try {
             return future.get();
-        } catch (Exception e) {
+        } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
         } 
     }
 
     public InternalResponseStatus transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+        CompletableFuture<InternalResponseStatus> future;
 
-        InternalResponseStatus completed = completedTransactions.get(uuid);
-        if (completed != null) {
-            return completed;
+        transactionCompleted.readLock().lock();
+        try {
+            InternalResponseStatus completed = completedTransactions.get(uuid);
+            if (completed != null) {
+                return completed;
+            }
+
+            InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
+            if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
+
+            future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
+        } finally {
+            transactionCompleted.readLock().unlock();
         }
-
-        InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
-        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-
-        CompletableFuture<InternalResponseStatus> future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
 
         try {
             return future.get();
-        } catch (Exception e) {
+        } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
         }
     }
 
     public ReadResult readBalance(String walletId, int blockNumber) {
 
+        blockCompleted.readLock().lock();
         if (node_block_counter < blockNumber) { 
             CompletableFuture<Void> future = pendingBlock.computeIfAbsent(blockNumber, k -> new CompletableFuture<>());
             try {
                 future.get();
-                
-            }
-            catch (Exception e) {
+            } catch (ExecutionException | InterruptedException e ) {
+                blockCompleted.readLock().unlock();  
                 return new ReadResult(-1L, -1);
-            }   
+            } 
         }
+        blockCompleted.readLock().unlock();
 
         Wallet wallet = wallets.getOrDefault(walletId, null);
         if (wallet == null){ return new ReadResult(-1L, -1); }
@@ -162,26 +187,27 @@ public class NodeState {
             InternalResponseStatus requestStatus = executeTransaction(record);
 
             node_transaction_counter++;
+            transactionCompleted.writeLock().lock();
+            try {
+                CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getUuid());
 
-            CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getUuid());
+                if (future != null) {
+                    future.complete(requestStatus);
+                }
 
-            if (future != null) {
-                future.complete(requestStatus);
+                completedTransactions.put(record.getUuid(), requestStatus);
+            } finally {
+                transactionCompleted.writeLock().unlock();
             }
-
-            completedTransactions.put(record.getUuid(), requestStatus);
         }
         synchronized (blocksLock) {
             blocks.add(block);
-            node_block_counter = block.getBlockNumber();
+            node_block_counter++;
         } // todo check lock on everything or just add
         CompletableFuture<Void> future = pendingBlock.remove(block.getBlockNumber());
         if (future != null) {
             future.complete(null);
         }
-        
-        // node_block_counter++; 
-
     }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {
@@ -265,8 +291,8 @@ public class NodeState {
             Debug.log("Transferred: " + record.getAmount() + " : " + record.getSrcWalletId() + " > " + record.getDstWalletId());
             return InternalResponseStatus.OK;
         } finally {
-            srcWallet.writeLock().unlock();
             dstWallet.writeLock().unlock();
+            srcWallet.writeLock().unlock();
         }
     }
     

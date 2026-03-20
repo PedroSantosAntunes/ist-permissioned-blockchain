@@ -22,7 +22,8 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
      * @param request
      * @param responseObserver
      */
-    @Override
+
+      @Override
     public void broadcast(BroadcastRequest request, StreamObserver<BroadcastResponse> responseObserver){
 
         Transaction transaction = request.getTransaction();
@@ -38,7 +39,6 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
         responseObserver.onNext(response);
         responseObserver.onCompleted();
     };
-  
 
     /**
      * Node requests the data from a certain transaction to be sent

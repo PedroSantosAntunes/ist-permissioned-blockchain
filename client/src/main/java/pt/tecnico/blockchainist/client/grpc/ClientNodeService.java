@@ -20,7 +20,7 @@ public class ClientNodeService {
 	
 	private CommandProcessor processor;
 
-	private final static long TIME_OUT_SECONDS = 10;
+	private final static long TIME_OUT_SECONDS = 25;
 	private static final Metadata.Key<String> DELAY_HEADER_KEY =
         Metadata.Key.of("delay", Metadata.ASCII_STRING_MARSHALLER);
 
@@ -90,7 +90,6 @@ public class ClientNodeService {
 		Debug.log("\n-----\nClient: Sending read balance request!\n" + request);
 
 		ClientInterceptor delayInterceptor = withDelayHeader(delay);
-		long balance;
 		if (isBlocking){
 			ReadBalanceResponse response = syncStub
 							.withInterceptors(delayInterceptor)
@@ -98,13 +97,12 @@ public class ClientNodeService {
 							.readBalance(request);
 			
 			processor.setLastReadBlock(response.getBlockNumber());
-
-		} else {
-			asyncStub
-				.withInterceptors(delayInterceptor)
-				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
-				.readBalance(request, new ClientAsyncResponseObserver<ReadBalanceResponse>(this.processor, uuid));
+			return response.getBalance();
 		}
+		asyncStub
+			.withInterceptors(delayInterceptor)
+			.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
+			.readBalance(request, new ClientAsyncResponseObserver<ReadBalanceResponse>(this.processor, uuid));
 		return -1L; // Placeholder return value for async case
 	}
 

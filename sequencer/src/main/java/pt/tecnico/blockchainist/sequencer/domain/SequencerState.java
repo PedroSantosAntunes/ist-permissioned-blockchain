@@ -20,7 +20,8 @@ public class SequencerState {
     private int CREATE_BLOCK_SECONDS;
 
     private final Map<Integer, BlockRecord> blockChain = new ConcurrentHashMap<>();
-    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
+
+    private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>(); // Estrutura mudar?
 
     private int global_transaction_counter = 1;
     private int next_block_number = 1;
@@ -87,28 +88,29 @@ public class SequencerState {
             createBlock();
         }
     }
-
+    // TODO SYNCHRONIZED MAS ONTEM PENSÁMOS NOS LOCKS
     private synchronized void createBlock() {
-        if (pendingTransactions.isEmpty()) {
+        try {
+            if (pendingTransactions.isEmpty()) {
+                return;
+            }
+
+            List<TransactionRecord> blockTransactions = new ArrayList<>();
+
+            while (!pendingTransactions.isEmpty() && blockTransactions.size() < MAX_BLOCK_SIZE) {
+                blockTransactions.add(pendingTransactions.removeFirst());
+            }
+
+            BlockRecord block = new BlockRecord(next_block_number++, blockTransactions);
+            
+            synchronized (blockChainLock) {
+                blockChain.put(block.getBlockNumber(), block);
+                blockChainLock.notifyAll();
+            }
+            Debug.log("New block added to blockchain:\n" + block);
+        } finally {
             startTimer();
-            return;
         }
-
-        List<TransactionRecord> blockTransactions = new ArrayList<>();
-
-        while (!pendingTransactions.isEmpty() && blockTransactions.size() < MAX_BLOCK_SIZE) {
-            blockTransactions.add(pendingTransactions.removeFirst());
-        }
-
-        BlockRecord block = new BlockRecord(next_block_number++, blockTransactions);
-        
-        synchronized (blockChainLock) {
-            blockChain.put(block.getBlockNumber(), block);
-            blockChainLock.notifyAll();
-        }
-
-        startTimer();
-        Debug.log("New block added to blockchain:\n" + block);
     }
 
     private void startTimer() {

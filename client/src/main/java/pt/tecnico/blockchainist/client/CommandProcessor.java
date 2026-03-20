@@ -201,10 +201,10 @@ public class CommandProcessor {
                     node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), true);
                     break;
                 case DELETE_ASYNC: 
-                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), false);
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), false);
                     break;
                 case DELETE_BLOCKING:
-                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), true);
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), true);
                     break;
                 case TRANSFER_ASYNC:
                     node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), false);
