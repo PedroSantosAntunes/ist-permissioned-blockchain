@@ -29,18 +29,19 @@ Aos .proto:
 
 Ao programa do Cliente:
 - Suporta **stubs e respostas assíncronas** (`ClientNodeService e Client Async Response Observer`). Respostas chamam as mesmas funções de print (`synchronized`) para garantir alguma consistência visual no terminal, apesar de não ser garantida máxima consistência;
-- Tem uma lista de **PendingRequests**. Cada PendingRequest têm informação para **voltar a pedir a mesma operação a outro nó caso o nó atual falhe / cliente desconfie que o nó falhou** (timeout do client);
+- Tem uma lista de **PendingRequests**. Cada PendingRequest tem informação para **voltar a pedir a mesma operação a outro nó caso o nó atual falhe / cliente desconfie que o nó falhou** (timeout do client);
 - Suporta **delay** nas operações (através de **metadados**);
-- Guarda numero do bloco mais recente recebido durante um ReadBalanceRequest para ajudar a garantir **Linearizability**;
-- Cria um UUID para cada pedido de transação para conseguir identificar a transação, suportar o recebimento de respostas assincronas e para evitar que a transação seja executada várias vezes;
+- Guarda o número do bloco mais recente observado durante um ReadBalanceRequest garantindo que o nó não retorna valores associados a estados da blockchain anteriores a esse bloco, assegurando assim **Linearizability**;
+- Cria um UUID para cada pedido de transação para conseguir identificar a transação, suportar o recebimento de respostas assíncronas e para evitar que a transação seja executada várias vezes;
 
 Ao programa do Nó:
 - Tem um **PendingTransactions** que mapeia UUID de transação para um **CompletableFuture de um InternalResponseStatus**;
-- A thread **BlockFetcher**, que pede blocos ao sequencer e executa-os, mete a resposta no CompletableFuture. Assim que isto acontece, já temos resposta ao pedido;
-- Como metemos as transações que o blockFetcher executa na estrutura **completedTransactions**, **conseguimos reiniciar o nó em qualquer ponto** e ainda assim as suas respostas serão as esperadas, pois este, uma vez reiniciado, fará fetch e executará todas as transações dos blocos outra vez;
+- A thread **BlockFetcher**, que pede blocos ao sequencer e executa-os, mete a resposta no CompletableFuture. Assim que isto acontece, já se obteve a resposta ao pedido;
+- As transações que o blockFetcher executa na estrutura **completedTransactions**, **permitem reiniciar o nó em qualquer ponto** e ainda assim as suas respostas serão as esperadas, pois este, uma vez reiniciado, fará fetch e executará todas as transações dos blocos outra vez;
 - Tem um **DelayNodeInterceptor** para possibilitar pedidos com delay do cliente;
-- É necessário garantir que a partir do momento em que se lê um resultado, não podemos receber um resultado mais antigo (**Linearizability**). Para isso, temos um **PendingBlocks**. O cliente inicialmente mandou o último block que tinha lido. Se o nó ainda não estiver nesse block, esperamos até que este dê fetch desse bloco para retornar a resposta ao Read. Enviamos também o blockNumber que foi lido para o cliente atualizar o seu valor e **nunca ler valores mais antigos que o que acabou de ler**;
-
+- É necessário garantir que a partir do momento em que se lê um resultado, não se pode receber um resultado mais antigo (**Linearizability**). Para isso, temos um **PendingBlocks**. O cliente inicialmente mandou o último block que tinha lido. Se o nó ainda não estiver nesse block, espera-se até que este dê fetch desse bloco para retornar a resposta ao Read. Envia-se também o blockNumber que foi lido para o cliente atualizar o seu valor e **nunca ler valores mais antigos do que o que acabou de ler**;
+- Os pedidos de transação podem ser tratados em paralelo, uma vez que o acesso ao estado de conclusão é protegido por **read locks**, enquanto que a atualização desse estado durante a execução de blocos é feita sob um **write lock**;
+- Cada wallet é protegida por um read/write lock, permitindo vários pedidos de leitura em paralelo e bloqueando apenas as wallets necessárias durante operações de escrita.
 
 - **Nota**: o leBlockchain é uma operação de debug com objetivo de retornar o estado atual do nó, logo não se aplica a verificação se o nó encontra-se mais atrasado que a última transação conhecida pelo cliente (Linearizability).
 

@@ -18,7 +18,6 @@ public class ClientAsyncResponseObserver<Response> implements StreamObserver<Res
 
     @Override
     public void onNext(Response response) {
-        //Aqui deve estar o código a executar no caso de resposta normal
         String extraOutput = null;
         if (response instanceof ReadBalanceResponse){
             ReadBalanceResponse readResponse = (ReadBalanceResponse) response;
