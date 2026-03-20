@@ -75,6 +75,7 @@ public class NodeState {
         sequencer.broadcastCreateWallet(uuid, userId, walletId);
 
         try {
+            Debug.log("\n-----\nNode: waiting for create wallet transaction to be executed!\n");
             return future.get();
         } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
@@ -102,6 +103,7 @@ public class NodeState {
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
 
         try {
+            Debug.log("\n-----\nNode: waiting for delete wallet transaction to be executed!\n");
             return future.get();
         } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
@@ -128,6 +130,7 @@ public class NodeState {
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
 
         try {
+            Debug.log("\n-----\nNode: waiting for transfer transaction to be executed!\n");
             return future.get();
         } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
@@ -140,6 +143,7 @@ public class NodeState {
         if (node_block_counter < blockNumber) { 
             CompletableFuture<Void> future = pendingBlock.computeIfAbsent(blockNumber, k -> new CompletableFuture<>());
             try {
+                Debug.log("\n-----\nNode: waiting for node to update its blockchain to send an updated balance!\n");
                 future.get();
             } catch (ExecutionException | InterruptedException e ) {
                 blockCompleted.readLock().unlock();  
@@ -167,7 +171,6 @@ public class NodeState {
     }
 
     public void getBlock () { 
-        Debug.log("\n-----\nNode: Requesting block from sequencer:" + (node_block_counter + 1) + "\n");
         BlockRecord block = sequencer.deliverBlock(node_block_counter + 1);
 
         if(block.getBlockNumber() == -1) {
@@ -202,12 +205,15 @@ public class NodeState {
         }
         synchronized (blocksLock) {
             blocks.add(block);
+            
+            blockCompleted.writeLock().lock();
             node_block_counter++;
+            CompletableFuture<Void> future = pendingBlock.remove(block.getBlockNumber());
+            if (future != null) {
+                future.complete(null);
+            }
+            blockCompleted.writeLock().unlock();
         } // todo check lock on everything or just add
-        CompletableFuture<Void> future = pendingBlock.remove(block.getBlockNumber());
-        if (future != null) {
-            future.complete(null);
-        }
     }
 
     private InternalResponseStatus executeTransaction(TransactionRecord record) {

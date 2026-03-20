@@ -47,8 +47,6 @@ public class SequencerState {
         transaction.setSequenceNumber(global_transaction_counter++);
         addPendingTransaction(transaction);
 
-        Debug.log("Transaction added to pending transactions:\n" + transaction);
-
         return ;
     }
 
@@ -76,24 +74,24 @@ public class SequencerState {
                 }
             }
         }
-
-    
         return blockChain.get(blockNumber);
     }
 
     private void addPendingTransaction(TransactionRecord tx) {
         pendingTransactions.addLast(tx);
 
+        Debug.log("\n-----\nSequencer: Transaction added to pending transactions:\n" + tx);
         if (pendingTransactions.size() >= MAX_BLOCK_SIZE) {
             createBlock();
         }
     }
-    // TODO SYNCHRONIZED MAS ONTEM PENSÁMOS NOS LOCKS
+
     private synchronized void createBlock() {
         try {
             if (pendingTransactions.isEmpty()) {
                 return;
             }
+            Debug.log("\n-----\nSequencer: Creating block!\n");
 
             List<TransactionRecord> blockTransactions = new ArrayList<>();
 
@@ -117,6 +115,9 @@ public class SequencerState {
         if (scheduledTask != null && !scheduledTask.isDone()) {
             scheduledTask.cancel(false);
         }
-        scheduledTask = scheduler.schedule(() -> createBlock(), CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
+        scheduledTask = scheduler.schedule(() -> {
+                Debug.log("\n-----\nSequencer: Create block timeout reached!\n");
+                createBlock();
+            }, CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
     }
 }

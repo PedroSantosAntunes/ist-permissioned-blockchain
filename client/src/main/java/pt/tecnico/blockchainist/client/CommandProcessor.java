@@ -269,8 +269,6 @@ public class CommandProcessor {
         System.err.println(statusMessage + " " + commandNumber);
     }
 
-    // TODO locks ou sychronized pq podem existir threads async a retornar 
-    // valores mais recentes e nao queremos dois a chamar ao mesmo tempo???
     public synchronized void setLastReadBlock(int newReadBlock) {
 		if (newReadBlock > lastReadBlock){
 			lastReadBlock = newReadBlock;

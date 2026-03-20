@@ -77,7 +77,8 @@ public class NodeSequencerService {
 	public BlockRecord deliverBlock(int next_block){
 		DeliverBlockRequest request = DeliverBlockRequest.newBuilder().setBlockNumber(next_block).build();
 		
-		Debug.log("Sending deliver block request to sequencer!\n" + request);
+		Debug.log("\n-----\nNode: Requesting block from sequencer:" + next_block + "!\n");
+
 		Block block = stub.deliverBlock(request).getBlock();
 
 		// Block to block record

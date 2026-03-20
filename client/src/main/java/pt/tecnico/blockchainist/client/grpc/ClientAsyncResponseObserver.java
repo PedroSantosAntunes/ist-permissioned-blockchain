@@ -4,6 +4,7 @@ import io.grpc.stub.StreamObserver;
 import pt.tecnico.blockchainist.client.*;
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.contract.*;
+import pt.tecnico.blockchainist.debug.Debug;
 
 public class ClientAsyncResponseObserver<Response> implements StreamObserver<Response> {
     
@@ -24,6 +25,7 @@ public class ClientAsyncResponseObserver<Response> implements StreamObserver<Res
             extraOutput = String.valueOf(readResponse.getBalance());
             processor.setLastReadBlock(readResponse.getBlockNumber());
         }
+        Debug.log("\n-----\nClient: Received async response of type: " + response.getClass().getSimpleName() + "!\n");
         processor.concludeOperation(uuid, extraOutput);
     }
 

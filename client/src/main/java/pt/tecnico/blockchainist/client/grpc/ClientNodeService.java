@@ -49,6 +49,8 @@ public class ClientNodeService {
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
 				.createWallet(request);
+			
+			Debug.log("\n-----\nClient: Received response for create wallet request!\n");
 		} else {
 			asyncStub
 				.withInterceptors(delayInterceptor)
@@ -72,6 +74,8 @@ public class ClientNodeService {
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
 				.deleteWallet(request);
+			
+			Debug.log("\n-----\nClient: Received response for delete wallet request!\n");
 		}
 		else {
 			asyncStub
@@ -96,6 +100,8 @@ public class ClientNodeService {
 							.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
 							.readBalance(request);
 			
+			Debug.log("\n-----\nClient: Received response for read balance request!\n");
+
 			processor.setLastReadBlock(response.getBlockNumber());
 			return response.getBalance();
 		}
@@ -123,6 +129,8 @@ public class ClientNodeService {
 				.withInterceptors(delayInterceptor)
 				.withDeadlineAfter(TIME_OUT_SECONDS, TimeUnit.SECONDS)
 				.transfer(request);
+
+			Debug.log("\n-----\nClient: Received response for transfer request!\n");
 			}
 		else {
 			asyncStub

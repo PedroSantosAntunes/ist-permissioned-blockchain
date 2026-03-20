@@ -92,7 +92,7 @@ mvn -Ddebug=1 exec:java
 
 ## Arguments
 
-Pass runtime arguments with `-Dexec.args`, for example on the sequencer.
+Pass runtime arguments with `-Dexec.args`, for example on the sequencer (port number, blocksize , createBlockTimeout).
 ```s
-mvn exec:java -Dexec.args="5000"
+mvn exec:java -Dexec.args="5000 4 5"
 ```
