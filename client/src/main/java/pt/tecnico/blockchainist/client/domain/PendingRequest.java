@@ -6,20 +6,17 @@ public class PendingRequest {
     private String type;
 
     private String uuid;
+    private String org;
     private String[] split;
     private Boolean isBlocking;
-    private int nodeIndexPosition;
-    private int firstNodeRequested;
 
-    public PendingRequest(long commandNumber, String type, String uuid, String[] split, boolean isBlocking, int nodeIndexPosition) {
+    public PendingRequest(long commandNumber, String type, String uuid, String org, String[] split, boolean isBlocking) {
         this.commandNumber = commandNumber; 
         this.type = type;
-
+        this.org = org;
         this.uuid = uuid;
         this.split = split;
         this.isBlocking = isBlocking;
-        this.nodeIndexPosition = nodeIndexPosition;
-        this.firstNodeRequested = Integer.parseInt(split[nodeIndexPosition]);
     }
 
     public long getCommandNumber() {
@@ -42,18 +39,7 @@ public class PendingRequest {
         return this.isBlocking;
     }
 
-    public boolean tryNextNode(int totalNodes) {
-        // change to next node
-        Integer nextNodeToTry = (Integer.parseInt(split[nodeIndexPosition]) + 1) % totalNodes;
-        split[nodeIndexPosition] = nextNodeToTry.toString();
-
-        if (nextNodeToTry == firstNodeRequested) {
-            return false;
-        }
-        return true;
-    }
-
-    public int getNodeIndex() {
-        return Integer.parseInt(split[nodeIndexPosition]);
+    public String getOrganization() {
+        return this.org;
     }
 }

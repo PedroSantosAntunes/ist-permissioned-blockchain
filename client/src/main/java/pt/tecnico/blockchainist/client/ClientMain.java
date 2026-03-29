@@ -1,6 +1,8 @@
 package pt.tecnico.blockchainist.client;
 
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 
 import pt.tecnico.blockchainist.debug.Debug;
@@ -9,6 +11,7 @@ import pt.tecnico.blockchainist.debug.Debug;
 public class ClientMain {
 
     public static void main(String[] args) {
+        Map<String, ClientNodeService> nodes = new HashMap<>();
 
         System.out.println(ClientMain.class.getSimpleName());
         Debug.log("Debug is ON");
@@ -21,7 +24,8 @@ public class ClientMain {
         }
 
         // parse arguments
-        ArrayList<ClientNodeService> nodes = new ArrayList<>(args.length);
+        // TODO REMOVER DESNECESSARIO
+        // ArrayList<ClientNodeService> nodes = new ArrayList<>(args.length);
         try {
             for (String arg : args) {
                 String[] split = arg.split(":");
@@ -45,13 +49,18 @@ public class ClientMain {
                     return;
                 }
                 String organization = split[2];
-
-                nodes.add(new ClientNodeService(host, port, organization));
+                // TODO PERGUNTAR: se houver varios nodes para mesma org qual comportamentO?
+                if (nodes.containsKey(organization)) {
+                    System.err.println("Node for org already exists: " + organization);
+                    printUsage();
+                    return;
+                }
+                nodes.put(organization, new ClientNodeService(host, port, organization));
             }
 
             CommandProcessor processor = new CommandProcessor(nodes);
 
-            for(ClientNodeService node : nodes) {
+            for(ClientNodeService node : nodes.values()) {
                 node.setProcessor(processor);
             }
             
@@ -62,8 +71,8 @@ public class ClientMain {
         }
     }
 
-    private static void terminateNodeChannels(ArrayList<ClientNodeService> nodes) {
-        for (ClientNodeService node : nodes) {
+    private static void terminateNodeChannels(Map<String, ClientNodeService> nodes) {
+        for (ClientNodeService node : nodes.values()) {
             if (node != null) 
                 node.closeChannel();
         }

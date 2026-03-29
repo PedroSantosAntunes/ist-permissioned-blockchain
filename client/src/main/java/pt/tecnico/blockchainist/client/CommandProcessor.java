@@ -1,21 +1,18 @@
 package pt.tecnico.blockchainist.client;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
-import javax.management.RuntimeErrorException;
-
 import java.util.UUID;
 
 import io.grpc.StatusRuntimeException;
 import pt.tecnico.blockchainist.client.domain.PendingRequest;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
+import pt.tecnico.blockchainist.auth.AuthInfo;
 
 
 public class CommandProcessor {
@@ -36,11 +33,14 @@ public class CommandProcessor {
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
     private final AtomicLong commandCounter = new AtomicLong(0);
-    private final ArrayList<ClientNodeService> nodes;
+    //TODO mudar para orgs
+    // private final ArrayList<ClientNodeService> nodes;
+    private Map<String, ClientNodeService> nodes = new HashMap<>();
+
     private final ConcurrentHashMap<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>(); // <UUID, PENDING REQUEST>
     private int lastReadBlock = 0;
 
-    public CommandProcessor(ArrayList<ClientNodeService> nodes) {
+    public CommandProcessor(Map<String, ClientNodeService> nodes) {
         this.nodes = nodes;
     }
 
@@ -117,17 +117,18 @@ public class CommandProcessor {
 
     /**
      * Request for the creation of a wallet (criaCarteira)
-     * @param split - contains: userId, walletId, nodeIndex, nodeDelay
+     * @param split - contains: command, userId, walletId, nodeIndex, nodeDelay
      * @param isBlocking
      */
     private void create(String[] split, boolean isBlocking) {
         this.checkCreateCommandArgs(split);
 
         Long commandNumber = this.commandCounter.incrementAndGet();
-
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? CREATE_BLOCKING : CREATE_ASYNC;
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 3);
+        String org = getOrganization(split[1]);
+
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
@@ -143,8 +144,9 @@ public class CommandProcessor {
         Long commandNumber = this.commandCounter.incrementAndGet();
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? DELETE_BLOCKING : DELETE_ASYNC;
+        String org = getOrganization(split[1]);
         
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 3);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -161,9 +163,10 @@ public class CommandProcessor {
         Long commandNumber = this.commandCounter.incrementAndGet();
 
         String uuid = UUID.randomUUID().toString();
-        String type = isBlocking ? BALANCE_BLOCKING : BALANCE_ASYNC; 
+        String type = isBlocking ? BALANCE_BLOCKING : BALANCE_ASYNC;
+        String org = split[2];
         
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 2);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -181,36 +184,36 @@ public class CommandProcessor {
 
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? TRANSFER_BLOCKING : TRANSFER_ASYNC;
+        String org = getOrganization(split[1]);
 
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, split.clone(), isBlocking, 5);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
 
     private void callNode(PendingRequest request) {
-        int nodeIndex = request.getNodeIndex();
-        ClientNodeService node = nodes.get(nodeIndex);
+        ClientNodeService node = nodes.get(request.getOrganization());
         String requestType = request.getType();
         String resultToPrint = null;
         try {
             switch(requestType) {
                 case CREATE_ASYNC:
-                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), false);
+                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), false);
                     break;
                 case CREATE_BLOCKING:
-                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), true);
+                    node.createWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), true);
                     break;
                 case DELETE_ASYNC: 
-                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), false);
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), false);
                     break;
                 case DELETE_BLOCKING:
-                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[4]), true);
+                    node.deleteWallet(request.getUuid(), request.getSplit()[1], request.getSplit()[2], Integer.parseInt(request.getSplit()[3]), true);
                     break;
                 case TRANSFER_ASYNC:
-                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), false);
+                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[5]), false);
                     break;
                 case TRANSFER_BLOCKING:
-                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[6]), true);
+                    node.transfer(request.getUuid(), request.getSplit()[1], request.getSplit()[2], request.getSplit()[3], Long.parseLong(request.getSplit()[4]), Integer.parseInt(request.getSplit()[5]), true);
                     break;
                 case BALANCE_ASYNC:
                     node.readBalance(request.getUuid(), request.getSplit()[1], Integer.parseInt(request.getSplit()[3]), lastReadBlock, false);
@@ -239,23 +242,27 @@ public class CommandProcessor {
 
     public void handleError(String uuid, StatusRuntimeException e) {
         PendingRequest request = pendingRequests.get(uuid); 
-        
-        switch (e.getStatus().getCode()) {
-            
-            case UNAVAILABLE, DEADLINE_EXCEEDED, CANCELLED:
-                if(request.tryNextNode(nodes.size()))
-                    callNode(request); 
-                else {
-                    pendingRequests.remove(uuid);
-                    displayErrorOperation(request.getCommandNumber(), "every node failed");
-                }
-                break;
 
-            default:
-                pendingRequests.remove(uuid);
-                displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription()); 
-                break;
-        }
+        pendingRequests.remove(uuid);
+        displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription());
+        
+        // switch (e.getStatus().getCode()) {
+            
+        //     case UNAVAILABLE, DEADLINE_EXCEEDED, CANCELLED:
+        //         if(request.tryNextNode(nodes.size()))
+        //             callNode(request); 
+        //         else {
+        //             pendingRequests.remove(uuid);
+        //             displayErrorOperation(request.getCommandNumber(), "every node failed");
+        //         }
+        //         break;
+
+        //     default:
+        //         pendingRequests.remove(uuid);
+        //         displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription()); 
+        //         break;
+            
+        // }
     }
 
     public synchronized static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {
@@ -283,10 +290,9 @@ public class CommandProcessor {
         this.checkDebugBlockchainStateArgs(split);
 
         Long commandNumber = this.commandCounter.incrementAndGet();
-
-        Integer nodeIndex = Integer.parseInt(split[1]);
-
-        ClientNodeService node = nodes.get(nodeIndex);
+        // TODO documentar
+        // Arguments changed to accept organization name isntead of node index B orgName
+        ClientNodeService node = nodes.get(split[1]);
         
         try{
             String transactions = node.getBlockchainState();
@@ -312,9 +318,9 @@ public class CommandProcessor {
     }
 
     private void checkCreateCommandArgs(String[] split) {
-        // C|c <user_id> <wallet_id> <node_index> <node_delay>
-        if (split.length != 5) {
-            throw new IllegalArgumentException("Expected 5 arguments, got " + split.length);
+        // C|c <user_id> <wallet_id> <node_delay>
+        if (split.length != 4) {
+            throw new IllegalArgumentException("Expected 4 arguments, got " + split.length);
         }
 
         if (!ID_PATTERN.matcher(split[1]).matches()) {
@@ -326,11 +332,7 @@ public class CommandProcessor {
         }
 
         try {
-            int nodeIndex = Integer.parseInt(split[3]);
-            if (nodeIndex < 0 || nodeIndex >= this.nodes.size()) {
-                throw new IllegalArgumentException("Node index must be between 0 and " + (this.nodes.size() - 1));
-            }
-            if (Integer.parseInt(split[4]) < 0) {
+            if (Integer.parseInt(split[3]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
             }
         } catch (NumberFormatException e) {
@@ -339,9 +341,9 @@ public class CommandProcessor {
     }
 
     private void checkDeleteCommandArgs(String[] split) {
-        // E|e <user_id> <wallet_id> <node_index> <node_delay>
-        if (split.length != 5) {
-            throw new IllegalArgumentException("Expected 5 arguments, got " + split.length);
+        // E|e <user_id> <wallet_id> <node_delay>
+        if (split.length != 4) {
+            throw new IllegalArgumentException("Expected 4 arguments, got " + split.length);
         }
 
         if (!ID_PATTERN.matcher(split[1]).matches()) {
@@ -353,20 +355,16 @@ public class CommandProcessor {
         }
 
         try {
-            int nodeIndex = Integer.parseInt(split[3]);
-            if (nodeIndex < 0 || nodeIndex >= this.nodes.size()) {
-                throw new IllegalArgumentException("Node index must be between 0 and " + (this.nodes.size() - 1));
-            }
-            if (Integer.parseInt(split[4]) < 0) {
+            if (Integer.parseInt(split[3]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Expected node number and node delay to be integers");
+            throw new IllegalArgumentException("Expected initial balance, node number, and node delay to be integers");
         }
     }
 
     private void checkBalanceCommandArgs(String[] split) {
-        // S|s <wallet_id> <node_index> <node_delay>
+        // S|s <wallet_id> <org_name> <node_delay>
         if (split.length != 4) {
             throw new IllegalArgumentException("Expected 4 arguments, got " + split.length);
         }
@@ -375,23 +373,23 @@ public class CommandProcessor {
             throw new IllegalArgumentException("Expected Wallet ID to be composed of ASCII alphanumeric characters, got \"" + split[1] + "\"");
         }
 
+        if (!nodes.containsKey(split[2])) {
+            throw new IllegalArgumentException("Organization not found: " + split[2]);
+        }
+
         try {
-            int nodeIndex = Integer.parseInt(split[2]);
-            if (nodeIndex < 0 || nodeIndex >= this.nodes.size()) {
-                throw new IllegalArgumentException("Node index must be between 0 and " + (this.nodes.size() - 1));
-            }
             if (Integer.parseInt(split[3]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Expected node number and node delay to be integers");
+            throw new IllegalArgumentException("Expected initial balance, node number, and node delay to be integers");
         }
     }
 
     private void checkTransferCommandArgs(String[] split) {
-        // T|t <source_user_id> <source_wallet_id> <destination_wallet_id> <amount> <node_index> <node_delay>
-        if (split.length != 7) {
-            throw new IllegalArgumentException("Expected 7 arguments, got " + split.length);
+        // T|t <source_user_id> <source_wallet_id> <destination_wallet_id> <amount> <node_delay>
+        if (split.length != 6) {
+            throw new IllegalArgumentException("Expected 6 arguments, got " + split.length);
         }
 
         if (!ID_PATTERN.matcher(split[1]).matches()) {
@@ -410,11 +408,7 @@ public class CommandProcessor {
             if (Long.parseLong(split[4]) < 0) {
                 throw new IllegalArgumentException("Amount cannot be negative");
             }
-            int nodeIndex = Integer.parseInt(split[5]);
-            if (nodeIndex < 0 || nodeIndex >= this.nodes.size()) {
-                throw new IllegalArgumentException("Node index must be between 0 and " + (this.nodes.size() - 1));
-            }
-            if (Integer.parseInt(split[6]) < 0) {
+            if (Integer.parseInt(split[5]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
             }
         } catch (NumberFormatException e) {
@@ -428,13 +422,8 @@ public class CommandProcessor {
             throw new IllegalArgumentException("Expected 2 arguments, got " + split.length);
         }
 
-        try {
-            int nodeIndex = Integer.parseInt(split[1]);
-            if (nodeIndex < 0 || nodeIndex >= this.nodes.size()) {
-                throw new IllegalArgumentException("Node index must be between 0 and " + (this.nodes.size() - 1));
-            }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Expected node index to be an integer");
+        if (!nodes.containsKey(split[1])) {
+            throw new IllegalArgumentException("Organization not found: " + split[3]);
         }
     }
 
@@ -455,12 +444,20 @@ public class CommandProcessor {
 
     private static void printUsage() {
         System.err.println("Usage:\n" +
-                "- C|c <user_id> <wallet_id> <node_index> <node_delay>\n" +
-                "- E|e <user_id> <wallet_id> <node_index> <node_delay>\n" +
-                "- S|s <wallet_id> <node_index> <node_delay>\n" +
-                "- T|t <source_user_id> <source_wallet_id> <destination_wallet_id> <amount> <node_index> <node_delay>\n" +
-                "- B <node_index>\n" +
+                "- C|c <user_id> <wallet_id> <node_delay>\n" +
+                "- E|e <user_id> <wallet_id> <node_delay>\n" +
+                "- S|s <wallet_id> <org_name> <node_delay>\n" +
+                "- T|t <source_user_id> <source_wallet_id> <destination_wallet_id> <amount> <node_delay>\n" +
+                "- B <org_name>\n" +
                 "- P <integer>\n" +
                 "- X\n");
+    }
+
+    private String getOrganization(String userId) {
+        String org = AuthInfo.getOrganization(userId);
+        if (org == null) {
+            throw new IllegalArgumentException("User not found: " + userId);
+        }
+        return org;
     }
 }
