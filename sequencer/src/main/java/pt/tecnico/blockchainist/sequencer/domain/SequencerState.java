@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -22,6 +23,7 @@ public class SequencerState {
     private final Map<Integer, BlockRecord> blockChain = new ConcurrentHashMap<>();
 
     private final Deque<TransactionRecord> pendingTransactions = new ArrayDeque<>();
+    private final HashSet<String> completedTransactions = new HashSet<>();
 
     private int global_transaction_counter = 1;
     private int next_block_number = 1;
@@ -43,10 +45,11 @@ public class SequencerState {
      * @return
      */
     public synchronized void broadcast(TransactionRecord transaction){
-
-        transaction.setSequenceNumber(global_transaction_counter++);
-        addPendingTransaction(transaction);
-
+        if (completedTransactions.contains(transaction.getUuid())) {
+            transaction.setSequenceNumber(global_transaction_counter++);
+            addPendingTransaction(transaction);
+            completedTransactions.add(transaction.getUuid());
+        }
         return ;
     }
 

@@ -1,5 +1,6 @@
 package pt.tecnico.blockchainist.node.domain;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Wallet {
@@ -8,6 +9,7 @@ public class Wallet {
     private String userId;
     private long balance;
 
+    private final AtomicBoolean deleting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Wallet(String walletId, String userId, long balance){
@@ -39,6 +41,14 @@ public class Wallet {
 
     public ReentrantReadWriteLock.WriteLock writeLock() {
         return lock.writeLock();
+    }
+
+    public boolean isDeleting() {
+        return deleting.get();
+    }
+
+    public void setDeleting(boolean value) {
+        deleting.set(value);
     }
 
     @Override

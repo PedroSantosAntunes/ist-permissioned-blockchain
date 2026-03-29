@@ -64,9 +64,15 @@ public class SequencerMain {
 
         SequencerState state = new SequencerState(blockSize, createBlockTimeout);
 
-        final BindableService impl = new SequencerServiceImpl(state);
+        SequencerServiceImpl impl = new SequencerServiceImpl(state);
+        try {
+            impl.loadPrivateKey();
+        } catch (RuntimeException e) {
+            return;
+        }
+        final BindableService service = impl; // TODO PEDRO NÃO ACABASTE ISTO !!!! ASS: DIOGO :)
 
-        Server server = ServerBuilder.forPort(port).addService(impl).build();
+        Server server = ServerBuilder.forPort(port).addService(service).build();
         server.start();
         Debug.log("Sequencer started");
         server.awaitTermination();
