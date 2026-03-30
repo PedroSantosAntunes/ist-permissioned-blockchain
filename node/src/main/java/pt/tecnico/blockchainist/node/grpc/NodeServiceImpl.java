@@ -95,6 +95,19 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Transfer currency request received!\n" + request);
 
         InternalResponseStatus result = state.transfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+        // failed and optimized
+        if (isError(result, responseObserver)) {
+            return;
+        }
+        if (result == InternalResponseStatus.EXECUTED_LOCALY) {
+            TransferResponse response = TransferResponse.getDefaultInstance();
+            Debug.log("\n-----\nNode: Sending transfer response!\n" + response);
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+            state.optimizedBroadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+            return;
+        }
+
         if(!isError(result, responseObserver)) {
             TransferResponse response = TransferResponse.getDefaultInstance();
             Debug.log("\n-----\nNode: Sending transfer response!\n" + response);
@@ -165,7 +178,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     }
 
     private boolean isError(InternalResponseStatus status, StreamObserver<?> responseObserver) {
-        if (status == InternalResponseStatus.OK) {
+        if (status == InternalResponseStatus.OK || status == InternalResponseStatus.EXECUTED_LOCALY) {
             return false;
         }
 

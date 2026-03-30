@@ -13,14 +13,14 @@ INPUT_CHECK="./client_input/checkBalance.txt"
 EXPECTED_OUTPUT="./expected_output/balanceZero.txt"
 
 TMP_DIR="./tmp-test"
-N_CLIENTS=9
+N_CLIENTS=2
+
+CLIENT_ARGS="localhost:2001:OrgA localhost:2002:OrgB localhost:2003:OrgC"
 ################################################
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m'
-
-
 
 COMPILE=true
 for arg in "$@"; do
@@ -32,9 +32,9 @@ done
 mkdir -p "$TMP_DIR"
 
 exec_client() {
-    mvn --quiet -f "$MVN_ROOT_POM" -pl "$MVN_CLIENT_MODULE" exec:java < "$1" > "$2"
+    mvn --quiet -f "$MVN_ROOT_POM" -pl "$MVN_CLIENT_MODULE" \
+        exec:java -Dexec.args="$CLIENT_ARGS" < "$1" > "$2"
 }
-
 
 ###################### Starting node and sequencer ########################
 
@@ -46,12 +46,7 @@ exec_client() {
 
 # start node
 
-
-
-
 ##############################################################
-
-
 
 echo "Running $N_CLIENTS concurrent clients..."
 

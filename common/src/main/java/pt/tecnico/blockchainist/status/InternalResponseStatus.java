@@ -3,6 +3,7 @@ package pt.tecnico.blockchainist.status;
 public enum InternalResponseStatus {
     
     OK,
+    EXECUTED_LOCALY,
     BAD_USER_FORMAT,
     BAD_WALLET_FORMAT,
     WALLET_ALREADY_EXISTS,
@@ -12,6 +13,7 @@ public enum InternalResponseStatus {
     REMAINING_BALANCE,
     INSUFFICIENT_BALANCE,
     NEGATIVE_AMOUNT,
+    WRONG_ORGANIZATION,
     UNKNOWN;
 
 }

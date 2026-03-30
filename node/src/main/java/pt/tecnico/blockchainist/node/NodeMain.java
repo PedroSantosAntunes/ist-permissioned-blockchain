@@ -85,7 +85,7 @@ public class NodeMain {
             return;
         }
 
-        NodeState state = new NodeState(sequencer);
+        NodeState state = new NodeState(nodeOrg, sequencer);
         
         BlockFetcher fetcher = new BlockFetcher(state);
         fetcher.setDaemon(true);

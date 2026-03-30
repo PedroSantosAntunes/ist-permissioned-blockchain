@@ -11,13 +11,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
+import pt.tecnico.blockchainist.auth.AuthInfo;
 import pt.tecnico.blockchainist.debug.Debug;
 import pt.tecnico.blockchainist.record.*;
 import pt.tecnico.blockchainist.status.InternalResponseStatus;
 
 public class NodeState {
+    String organization;
     
     public record ReadResult(long balance, int blockNumber) {}
+    public record TransferResult(InternalResponseStatus status, int optimization) {}
     
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
@@ -45,10 +48,12 @@ public class NodeState {
 
     private final NodeSequencerService sequencer;
 
-    public NodeState(NodeSequencerService sequencer) {
+    public NodeState(String org, NodeSequencerService sequencer) {
         
         Wallet wallet = new Wallet(BC_WALLET, BC_NAME, BC_INIT_BALANCE);
         wallets.put(BC_WALLET, wallet);
+
+        this.organization = org;
     
         this.sequencer = sequencer;
     }
@@ -113,6 +118,40 @@ public class NodeState {
     public InternalResponseStatus transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         CompletableFuture<InternalResponseStatus> future;
 
+        InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
+        if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
+
+        Wallet srcWallet = this.wallets.get(srcWalletId);
+        Wallet dstWallet = this.wallets.get(dstWalletId);
+
+        Wallet first = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? srcWallet
+            : dstWallet;
+
+        Wallet second = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? dstWallet
+            : srcWallet;
+
+        first.writeLock().lock();
+        second.writeLock().lock();
+
+        InternalResponseStatus impossibleResponseStatus = validateImpossibleTransfer(srcUserId, srcWallet, dstWallet, amount);
+        if (impossibleResponseStatus != InternalResponseStatus.OK) {
+            Debug.log("Optimized: Impossible transfer.\n");
+            second.writeLock().unlock();
+            first.writeLock().unlock();
+            return impossibleResponseStatus;
+        }
+
+        InternalResponseStatus executedResponseStatus = validateExecuteTransfer(srcWallet, dstWallet, amount);
+        if (executedResponseStatus == InternalResponseStatus.EXECUTED_LOCALY) {
+            Debug.log("Optimized: Executing transfer locally.\n");
+            srcWallet.setBalance(srcWallet.getBalance() - amount);
+            dstWallet.setBalance(dstWallet.getBalance() + amount);
+            completedTransactions.put(uuid, InternalResponseStatus.OK);
+            return executedResponseStatus;
+        }
+
         transactionCompleted.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
@@ -120,14 +159,14 @@ public class NodeState {
                 return completed;
             }
 
-            InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
-            if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
-
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         } finally {
             transactionCompleted.readLock().unlock();
         }
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+        //TODO verificar estes locks (deve ser aqui?)
+        second.writeLock().unlock();
+        first.writeLock().unlock();
 
         try {
             Debug.log("\n-----\nNode: waiting for transfer transaction to be executed!\n");
@@ -135,6 +174,71 @@ public class NodeState {
         } catch (ExecutionException | InterruptedException e ) {
             return InternalResponseStatus.UNKNOWN;
         }
+    }
+
+    /**
+     * Validates static condtions to Transfer
+     * (if any state allows this transaction to be executed)
+     */
+    private InternalResponseStatus validateTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+        if (srcUserId == null || !validFormat(srcUserId)) {
+                System.err.println("Bad user id: " + srcUserId);
+                return InternalResponseStatus.BAD_USER_FORMAT;
+        }
+        if (srcWalletId == null || !validFormat(srcWalletId)) {
+            System.err.println("Bad wallet id: " + srcWalletId);
+            return InternalResponseStatus.BAD_WALLET_FORMAT;
+        }
+        if (dstWalletId == null || !validFormat(dstWalletId)) {
+            System.err.println("Bad wallet id: " + dstWalletId);
+            return InternalResponseStatus.BAD_WALLET_FORMAT;
+        }
+        if (!isPositiveAmount(amount)) {
+            System.err.println(amount + "should be positive");
+            return InternalResponseStatus.NEGATIVE_AMOUNT;
+        }
+        // user doesn't belong to this organization
+        if (!AuthInfo.getOrganization(srcUserId).equals(this.organization)) {
+            System.err.println("User is of wrong organization");
+            return InternalResponseStatus.NOT_AUTHORIZED;
+        }
+        return InternalResponseStatus.OK;
+    }
+
+    private InternalResponseStatus validateImpossibleTransfer(String userId, Wallet srcWallet, Wallet dstWallet, Long amount) {
+        if (srcWallet == null || dstWallet == null) return InternalResponseStatus.WALLET_NOT_FOUND;
+        if (srcWallet.getBalance() < amount) return InternalResponseStatus.INSUFFICIENT_BALANCE;
+        // src wallet userid is client userid
+        if (!srcWallet.getUserId().equals(userId)) return InternalResponseStatus.NOT_AUTHORIZED;
+        
+        return InternalResponseStatus.OK;
+    }
+
+    private InternalResponseStatus validateExecuteTransfer(Wallet srcWallet, Wallet dstWallet, Long amount) {
+        // dst wallet's user belongs to this org TODO add other ones
+        if (AuthInfo.getOrganization(dstWallet.getUserId()).equals(this.organization)) {
+            return InternalResponseStatus.EXECUTED_LOCALY;
+        }
+        return InternalResponseStatus.OK;
+    }
+
+    public void optimizedBroadcastTransfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+        sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
+
+        Wallet srcWallet = this.wallets.get(srcWalletId);
+        Wallet dstWallet = this.wallets.get(dstWalletId);
+
+        Wallet first = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? srcWallet
+            : dstWallet;
+
+        Wallet second = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? dstWallet
+            : srcWallet;
+
+        second.writeLock().unlock();
+        first.writeLock().unlock();
+
     }
 
     public ReadResult readBalance(String walletId, int blockNumber) {
@@ -331,30 +435,6 @@ public class NodeState {
         if (walletId == null || !validFormat(walletId)) {
             System.err.println("Bad wallet id: " + walletId);
             return InternalResponseStatus.BAD_WALLET_FORMAT;
-        }
-        return InternalResponseStatus.OK;
-    }
-    
-    /**
-     * Validates static condtions to Transfer
-     * (if any state allows this transaction to be executed)
-     */
-    private InternalResponseStatus validateTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
-        if (srcUserId == null || !validFormat(srcUserId)) {
-                System.err.println("Bad user id: " + srcUserId);
-                return InternalResponseStatus.BAD_USER_FORMAT;
-        }
-        if (srcWalletId == null || !validFormat(srcWalletId)) {
-            System.err.println("Bad wallet id: " + srcWalletId);
-            return InternalResponseStatus.BAD_WALLET_FORMAT;
-        }
-        if (dstWalletId == null || !validFormat(dstWalletId)) {
-            System.err.println("Bad wallet id: " + dstWalletId);
-            return InternalResponseStatus.BAD_WALLET_FORMAT;
-        }
-        if (!isPositiveAmount(amount)) {
-            System.err.println(amount + "should be positive");
-            return InternalResponseStatus.NEGATIVE_AMOUNT;
         }
         return InternalResponseStatus.OK;
     }

@@ -8,6 +8,7 @@ public class Wallet {
     private String walletId;
     private String userId;
     private long balance;
+    private boolean pendingDelete;
 
     private final AtomicBoolean deleting = new AtomicBoolean(false);
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -16,6 +17,7 @@ public class Wallet {
         this.walletId = walletId;
         this.userId = userId;
         this.balance = balance;
+        this.pendingDelete = false;
     }
 
     public String getWalletId(){
@@ -30,6 +32,13 @@ public class Wallet {
         return this.balance;
     }
 
+    public void setPendingDelete(boolean value) {
+        this.pendingDelete = value;
+    }
+
+    public boolean getPendingDelete() {
+        return this.pendingDelete;
+    }
 
     public void setBalance(long newBalance){
         this.balance = newBalance;
