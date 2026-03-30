@@ -32,7 +32,7 @@ public class SequencerMain {
             System.err.println("Port number out of range (0-65535): " + port);
             printUsage();
             return;
-        } 
+        }
 
         int blockSize = -1;
         try {
@@ -67,16 +67,18 @@ public class SequencerMain {
         SequencerServiceImpl impl = new SequencerServiceImpl(state);
         try {
             impl.loadPrivateKey();
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
+            System.err.println("\n-----\nSequencer: Failed to load sequencer private key!\n");
             return;
         }
-        final BindableService service = impl; // TODO PEDRO NÃO ACABASTE ISTO !!!! ASS: DIOGO :)
+        final BindableService service = impl;
 
         Server server = ServerBuilder.forPort(port).addService(service).build();
         server.start();
         Debug.log("Sequencer started");
         server.awaitTermination();
     }
+
 
 
     private static void printUsage() {

@@ -45,7 +45,7 @@ public class SequencerState {
      * @return
      */
     public synchronized void broadcast(TransactionRecord transaction){
-        if (completedTransactions.contains(transaction.getUuid())) {
+        if (!completedTransactions.contains(transaction.getUuid())) {
             transaction.setSequenceNumber(global_transaction_counter++);
             addPendingTransaction(transaction);
             completedTransactions.add(transaction.getUuid());
@@ -59,7 +59,7 @@ public class SequencerState {
      * @param sequence_number
      * @return
      */
-    public BlockRecord deliverBlock(int blockNumber){
+    public BlockRecord deliverBlock(int blockNumber) throws InterruptedException{
         if (blockNumber <= 0) {
             return null;
         }
@@ -70,11 +70,7 @@ public class SequencerState {
 
         synchronized (blockChainLock) {
             while (blockChain.get(blockNumber) == null) {
-                try{
-                    blockChainLock.wait();
-                } catch (InterruptedException e) {
-                    return new BlockRecord(-1, new ArrayList<TransactionRecord>());
-                }
+                blockChainLock.wait();
             }
         }
         return blockChain.get(blockNumber);

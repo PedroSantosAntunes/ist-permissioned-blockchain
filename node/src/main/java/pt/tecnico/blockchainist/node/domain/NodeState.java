@@ -171,10 +171,11 @@ public class NodeState {
     }
 
     public void getBlock () { 
-        BlockRecord block = sequencer.deliverBlock(node_block_counter + 1);
-
-        if(block.getBlockNumber() == -1) {
-            Debug.log("\n-----\nNode: Error fetching block from sequencer\n");
+        BlockRecord block;
+        try{
+            block = sequencer.deliverBlock(node_block_counter + 1);
+        } catch (Exception e) {
+            Debug.log("\n-----\nNode: Failed to receive block from sequencer!\n");
             return;
         }
 

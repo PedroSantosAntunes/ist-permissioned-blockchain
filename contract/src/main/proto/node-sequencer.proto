@@ -23,9 +23,13 @@ message DeliverBlockRequest {
   int32 block_number = 1;
 }
 
-message DeliverSignedBlockResponse {
-  Block block = 1;
+message SignedDeliverBlockResponse {
+  DeliverBlockResponse response = 1;
   SequencerSignature signature = 2;
+}
+
+message DeliverBlockResponse {
+  Block block = 1;
 }
 
 message SequencerSignature {
@@ -34,5 +38,5 @@ message SequencerSignature {
 
 service SequencerService {
   rpc Broadcast(BroadcastRequest) returns (BroadcastResponse);
-  rpc DeliverBlock(DeliverBlockRequest) returns (DeliverSignedBlockResponse);
+  rpc DeliverBlock(DeliverBlockRequest) returns (SignedDeliverBlockResponse);
 }

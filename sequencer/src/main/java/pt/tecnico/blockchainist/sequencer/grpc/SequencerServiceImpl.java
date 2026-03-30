@@ -5,6 +5,7 @@ import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.Signature;
+import static io.grpc.Status.*;
 import io.grpc.stub.StreamObserver;
 import com.google.protobuf.ByteString;
 import pt.tecnico.blockchainist.contract.*;
@@ -14,6 +15,7 @@ import pt.tecnico.blockchainist.grpc.RecordToTransaction;
 import pt.tecnico.blockchainist.grpc.TransactionToRecord;
 import pt.tecnico.blockchainist.sequencer.domain.SequencerState;
 import pt.tecnico.blockchainist.record.*;
+import java.util.ArrayList;
 
 public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceImplBase{
     private final SequencerState state;
@@ -52,61 +54,66 @@ public class SequencerServiceImpl extends SequencerServiceGrpc.SequencerServiceI
      * @param responseObserver
      */
     @Override
-    public void deliverBlock(DeliverBlockRequest request, StreamObserver<DeliverSignedBlockResponse> responseObserver){
+    public void deliverBlock(DeliverBlockRequest request, StreamObserver<SignedDeliverBlockResponse> responseObserver){
 
         int block_number = request.getBlockNumber();
 
         Debug.log("\n-----\nSequencer: Deliver block request received!\n" + request);
+        
+        BlockRecord record;
 
-        BlockRecord record = state.deliverBlock(block_number);
+        try{
+            record = state.deliverBlock(block_number);
+        } catch (InterruptedException e) {
+            // failed to get block
+            responseObserver.onError(NOT_FOUND.withDescription("Not Found Block: failed to obtain block").asRuntimeException());
+            return;
+        }
+
         Block block = BlockRecordToBlock.blockRecordToBlock(record);
+        SequencerSignature signedBlock = null;
 
+        try {
+            signedBlock = signBlock(block);
+        } catch (Exception e) {
+            responseObserver.onError(UNKNOWN.withDescription("Unknown internal error").asRuntimeException());
+            return;
+        }
 
-        DeliverSignedBlockResponse response = createSignedResponse(block);
+        DeliverBlockResponse response = DeliverBlockResponse.newBuilder()
+            .setBlock(block)
+            .build();
+
+        SignedDeliverBlockResponse signedResponse = SignedDeliverBlockResponse.newBuilder()
+            .setResponse(response)
+            .setSignature(signedBlock)
+            .build();
 
         Debug.log("Delivering block to node:\n" + block);
 
-        responseObserver.onNext(response);
+        responseObserver.onNext(signedResponse);
         responseObserver.onCompleted();
     };
 
-    private DeliverSignedBlockResponse createSignedResponse(Block block) {
-        try {
-            byte[] signatureBytes = signBlock(block.toByteArray());
 
-            SequencerSignature signature = SequencerSignature.newBuilder()
-                .setSignatureValue(ByteString.copyFrom(signatureBytes))
-                .build();
-            DeliverSignedBlockResponse signedResponse = DeliverSignedBlockResponse.newBuilder()
-                .setBlock(block)
-                .setSignature(signature)
-                .build();
-            
-            return signedResponse;
-        } catch (Exception e) {
-            // TODO rever exceptions, muita más
-            return null;
-        }
-    }
-
-    private byte[] signBlock(byte[] blockData) throws Exception {
+    private SequencerSignature signBlock(Block block) throws Exception{
         Signature sig = Signature.getInstance("SHA256withRSA");
         sig.initSign(privateKey);
-        sig.update(blockData);
-        return sig.sign();
+        sig.update(block.toByteArray());
+
+        SequencerSignature signature = SequencerSignature.newBuilder()
+            .setSignatureValue(ByteString.copyFrom(sig.sign()))
+            .build();
+
+        return signature;
     }
 
-    public void loadPrivateKey() throws RuntimeException {
-        try {
-            byte[] keyBytes = readResource();
-            PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            this.privateKey = kf.generatePrivate(spec);
-            Debug.log("\n-----\nSequencer: Loaded private key!\n");
-        } catch (Exception e) {
-            System.err.println("\n-----\nSequencer: Failed to load private key!\n");
-            throw new RuntimeException(e);
-        }
+    public void loadPrivateKey() throws Exception {
+        byte[] keyBytes = readResource();
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        this.privateKey = kf.generatePrivate(spec);
+        Debug.log("\n-----\nSequencer: Loaded private key!\n");
     }
 
     private byte[] readResource() throws Exception {

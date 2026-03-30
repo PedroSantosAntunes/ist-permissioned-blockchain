@@ -83,14 +83,15 @@ public class NodeSequencerService {
 		
 		Debug.log("\n-----\nNode: Requesting block from sequencer:" + next_block + "!\n");
 
-		DeliverSignedBlockResponse response = stub.deliverBlock(request);
-		Block block = response.getBlock();
-		SequencerSignature signature = response.getSignature();
+		SignedDeliverBlockResponse SignedDeliverBlockResponse = stub.deliverBlock(request);
+
+		Block block = SignedDeliverBlockResponse.getResponse().getBlock();
+		SequencerSignature signature = SignedDeliverBlockResponse.getSignature();
 
 		// if signature is invalid
 		if(!isBlockValid(block, signature)) {
 			Debug.log("\n-----\nNode: Invalid block signature!\n");
-			return new BlockRecord(-1, new ArrayList<TransactionRecord>());
+			throw new RuntimeException("Failed to validate signature");
 		}
 
 		// Block to block record
@@ -114,7 +115,7 @@ public class NodeSequencerService {
 		}
 	}
 
-	public void loadPublicKey() throws RuntimeException {
+	public void loadPublicKey() {
 		try {
             byte[] keyBytes = readResource();
 			X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);

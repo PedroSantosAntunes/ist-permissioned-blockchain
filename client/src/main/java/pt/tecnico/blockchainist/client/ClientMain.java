@@ -1,8 +1,15 @@
 package pt.tecnico.blockchainist.client;
 
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import pt.tecnico.blockchainist.auth.AuthInfo;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 
 import pt.tecnico.blockchainist.debug.Debug;
@@ -23,9 +30,21 @@ public class ClientMain {
             return;
         }
 
+        // Load all users private keys to send to NodeClientService
+        Map<String, PrivateKey> privateKeys = new HashMap<>();
+        for (String userId : AuthInfo.getAllUsers()) {
+            try {
+                PrivateKey privateKey;
+                privateKey = loadPrivateKey(userId + ".priv");
+                privateKeys.put(userId, privateKey);
+                System.out.println("User Private Key for " + userId + " loaded successfully."); // TODO melhorar get good meter debugs do mike mentira pedro
+            } catch (Exception e) {
+                System.err.println("Error loading private key for user " + userId + ": " + e.getMessage());
+                return;
+            }
+        }
+
         // parse arguments
-        // TODO REMOVER DESNECESSARIO
-        // ArrayList<ClientNodeService> nodes = new ArrayList<>(args.length);
         try {
             for (String arg : args) {
                 String[] split = arg.split(":");
@@ -49,13 +68,12 @@ public class ClientMain {
                     return;
                 }
                 String organization = split[2];
-                // TODO PERGUNTAR: se houver varios nodes para mesma org qual comportamentO?
                 if (nodes.containsKey(organization)) {
                     System.err.println("Node for org already exists: " + organization);
                     printUsage();
                     return;
                 }
-                nodes.put(organization, new ClientNodeService(host, port, organization));
+                nodes.put(organization, new ClientNodeService(host, port, organization, privateKeys));
             }
 
             CommandProcessor processor = new CommandProcessor(nodes);
@@ -78,7 +96,24 @@ public class ClientMain {
         }
     }
 
+    private static byte[] readResource(String path) throws Exception {
+        try (InputStream is = ClientMain.class.getClassLoader().getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IllegalArgumentException("Ficheiro não encontrado: " + path);
+            }
+            return is.readAllBytes();
+        }
+    }
+
+    private static PrivateKey loadPrivateKey(String resourcePath) throws Exception {
+        byte[] keyBytes = readResource(resourcePath);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePrivate(spec);
+    }
+
     private static void printUsage() {
         System.err.println("Usage: mvn exec:java -Dexec.args=\"<host>:<port>:<organization> [<host>:<port>:<organization> ...]\"");
     }
+
 }

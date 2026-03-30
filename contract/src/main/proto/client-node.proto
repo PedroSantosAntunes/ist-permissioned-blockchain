@@ -9,6 +9,16 @@ import "common.proto";
 // the .proto file.
 option java_multiple_files = true;
 
+message ClientSignature {
+  string signerIdentifier = 1;
+  bytes signature = 2;
+}
+
+message SignedTransaction {
+  Transaction transaction = 1;
+  ClientSignature signature = 2;
+}
+
 message CreateWalletResponse {
 }
 
@@ -35,9 +45,9 @@ message GetBlockchainStateResponse {
 }
 
 service NodeService {
-  rpc CreateWallet(CreateWalletRequest) returns (CreateWalletResponse);
-  rpc DeleteWallet(DeleteWalletRequest) returns (DeleteWalletResponse);
+  rpc CreateWallet(SignedTransaction) returns (CreateWalletResponse);
+  rpc DeleteWallet(SignedTransaction) returns (DeleteWalletResponse);
   rpc ReadBalance(ReadBalanceRequest) returns (ReadBalanceResponse);
-  rpc Transfer(TransferRequest) returns (TransferResponse);
+  rpc Transfer(SignedTransaction) returns (TransferResponse);
   rpc GetBlockchainState(GetBlockchainStateRequest) returns (GetBlockchainStateResponse);
 }

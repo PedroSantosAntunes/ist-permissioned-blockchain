@@ -10,20 +10,35 @@ import pt.tecnico.blockchainist.grpc.*;
 import static io.grpc.Status.*;
 import io.grpc.Context;
 
+
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import pt.tecnico.blockchainist.debug.Debug;
 
 public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
+    
     private final NodeState state;
+    private final Map<String, PublicKey> userPublicKeys;
 
-    public NodeServiceImpl(NodeState state) {
+    public NodeServiceImpl(NodeState state, Map<String, PublicKey> userPublicKeys) {
         this.state = state;
+        this.userPublicKeys = userPublicKeys;
     }
 
     @Override
-    public void createWallet(CreateWalletRequest request, StreamObserver<CreateWalletResponse> responseObserver) {
+    public void createWallet(SignedTransaction signedRequest, StreamObserver<CreateWalletResponse> responseObserver) {
+        if(!isTransactionValid(signedRequest)) {
+            responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Denied: invalid transaction signature").asRuntimeException());
+            return;
+        }
+        
+        CreateWalletRequest request = signedRequest.getTransaction().getCreateWallet();
         String uuid = request.getUuid();
         String userId = request.getUserId();
         String walletId = request.getWalletId();
@@ -41,7 +56,13 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     }
 
     @Override
-    public void deleteWallet(DeleteWalletRequest request, StreamObserver<DeleteWalletResponse> responseObserver) {
+    public void deleteWallet(SignedTransaction signedRequest, StreamObserver<DeleteWalletResponse> responseObserver) {
+        if(!isTransactionValid(signedRequest)) {
+            responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Denied: invalid transaction signature").asRuntimeException());
+            return;
+        }
+
+        DeleteWalletRequest request = signedRequest.getTransaction().getDeleteWallet();
         String uuid = request.getUuid();
         String userId = request.getUserId();
         String walletId = request.getWalletId();
@@ -58,7 +79,13 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
     }
 
     @Override
-    public void transfer(TransferRequest request, StreamObserver<TransferResponse> responseObserver){
+    public void transfer(SignedTransaction signedRequest, StreamObserver<TransferResponse> responseObserver){
+        if(!isTransactionValid(signedRequest)) {
+            responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Denied: invalid transaction signature").asRuntimeException());
+            return;
+        }
+
+        TransferRequest request = signedRequest.getTransaction().getTransfer();
         String uuid = request.getUuid();
         String srcUserId = request.getSrcUserId();
         String srcWalletId = request.getSrcWalletId();
@@ -118,6 +145,23 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
         Debug.log("\n-----\nNode: Sending get blockchain state response!\n" + response);
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+
+    private boolean isTransactionValid(SignedTransaction signedRequest){
+        Transaction transaction = signedRequest.getTransaction();
+        ClientSignature receivedSignature = signedRequest.getSignature();
+        try {
+			Debug.log("\n-----\nNode: Validating transaction signature!\n");
+			Signature sig = Signature.getInstance("SHA256withRSA");
+			String identifier = receivedSignature.getSignerIdentifier();
+            sig.initVerify(userPublicKeys.get(identifier));
+			sig.update(transaction.toByteArray());
+			return sig.verify(receivedSignature.getSignature().toByteArray());
+		} catch (Exception e) {
+			Debug.log("\n-----\nNode: Transaction signature validation failed!\n");
+			return false;
+		}
     }
 
     private boolean isError(InternalResponseStatus status, StreamObserver<?> responseObserver) {

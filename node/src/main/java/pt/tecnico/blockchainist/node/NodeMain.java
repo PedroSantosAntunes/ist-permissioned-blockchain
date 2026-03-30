@@ -7,11 +7,17 @@ import pt.tecnico.blockchainist.node.domain.NodeState;
 import pt.tecnico.blockchainist.node.grpc.NodeSequencerService;
 import pt.tecnico.blockchainist.node.grpc.NodeServiceImpl;
 import pt.tecnico.blockchainist.node.domain.BlockFetcher;
-
+import pt.tecnico.blockchainist.auth.AuthInfo;
 import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.ServerInterceptors;
 import pt.tecnico.blockchainist.node.grpc.DelayNodeInterceptor;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.HashMap;
+import java.util.Map;
 
 public class NodeMain {
     public static void main(String[] args)  throws IOException, InterruptedException {
@@ -72,13 +78,34 @@ public class NodeMain {
 
         NodeSequencerService sequencer = new NodeSequencerService(sequencerHost, sequencerPort);
 
+        try {
+            sequencer.loadPublicKey();
+        } catch (RuntimeException e) {
+            System.err.println("\n-----\nNode: Failed to load sequencer public key!\n");
+            return;
+        }
+
         NodeState state = new NodeState(sequencer);
         
         BlockFetcher fetcher = new BlockFetcher(state);
         fetcher.setDaemon(true);
         fetcher.start();
 
-        final BindableService impl = new NodeServiceImpl(state);
+
+        // <UserId,PublicKey>
+        Map<String, PublicKey> userPublicKeys = new HashMap<>();
+        for (String userId : AuthInfo.getAllUsers()) {
+            try {
+                PublicKey publicKey = loadPublicKey(userId + ".pub");
+                userPublicKeys.put(userId, publicKey);
+                System.out.println("User Public Key for " + userId + " loaded successfully.");
+            } catch (Exception e) {
+                System.err.println("Error loading public key for user " + userId + ": " + e.getMessage());
+                return;
+            }
+        }
+
+        final BindableService impl = new NodeServiceImpl(state, userPublicKeys);
 
         Server server = ServerBuilder.forPort(nodePort)
             .addService(ServerInterceptors.intercept(
@@ -96,4 +123,22 @@ public class NodeMain {
     private static void printUsage() {
         System.err.println("Usage: mvn exec:java -Dexec.args=\"<host>:<port>:<organization> [<host>:<port>:<organization> ...]\"");
     }
+
+    // To Node service Imple
+
+    private static PublicKey loadPublicKey(String resourcePath) throws Exception {
+        byte[] keyBytes = readResource(resourcePath);
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePublic(spec);
+    }
+    private static byte[] readResource(String path) throws Exception {
+        try (InputStream is = NodeMain.class.getClassLoader().getResourceAsStream(path)) {
+            if (is == null) {
+                throw new IllegalArgumentException("Ficheiro não encontrado nos resources: " + path);
+            }
+            return is.readAllBytes();
+        }
+    }
+
 }
