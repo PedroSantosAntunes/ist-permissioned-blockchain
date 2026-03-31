@@ -189,6 +189,9 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             case BAD_WALLET_FORMAT:
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Wallet Format: use only numbers and letters without spaces").asRuntimeException());
                 break;
+            case DUPLICATE_TRANSACTION:
+                responseObserver.onError(ALREADY_EXISTS.withDescription("Duplicate transaction").asRuntimeException());
+                break;
             case WALLET_ALREADY_EXISTS:
                 responseObserver.onError(ALREADY_EXISTS.withDescription("Repeated Wallet: wallet already exists").asRuntimeException());
                 break;
@@ -210,6 +213,8 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             case NEGATIVE_AMOUNT:
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
                 break;
+            case WRONG_ORGANIZATION:
+                responseObserver.onError(PERMISSION_DENIED.withDescription("Wrong organization.").asRuntimeException());
             default:
                 responseObserver.onError(UNKNOWN.withDescription("Unknown internal error").asRuntimeException());
                 break;

@@ -4,6 +4,7 @@ public enum InternalResponseStatus {
     
     OK,
     EXECUTED_LOCALY,
+    DUPLICATE_TRANSACTION,
     BAD_USER_FORMAT,
     BAD_WALLET_FORMAT,
     WALLET_ALREADY_EXISTS,

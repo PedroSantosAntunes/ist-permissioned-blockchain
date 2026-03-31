@@ -31,13 +31,12 @@ public class NodeState {
     private final Map<String, CompletableFuture<InternalResponseStatus>> pendingTransactions = new ConcurrentHashMap<>();
     private final Map<String, InternalResponseStatus> completedTransactions = new ConcurrentHashMap<>();
 
-    private final ReentrantReadWriteLock transactionCompleted = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock completedTransactionsLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock blockCompleted = new ReentrantReadWriteLock();
 
 
     private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
 
-    private int node_transaction_counter = 0;
     private int node_block_counter = 0;
     
     private final Object blocksLock = new Object();
@@ -61,7 +60,7 @@ public class NodeState {
     public InternalResponseStatus createWallet(String uuid, String userId, String walletId) {
         CompletableFuture<InternalResponseStatus> future;
 
-        transactionCompleted.readLock().lock();
+        completedTransactionsLock.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
             if (completed != null) {
@@ -74,7 +73,7 @@ public class NodeState {
 
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         } finally {
-            transactionCompleted.readLock().unlock();
+            completedTransactionsLock.readLock().unlock();
         }
 
         sequencer.broadcastCreateWallet(uuid, userId, walletId);
@@ -90,7 +89,7 @@ public class NodeState {
     public InternalResponseStatus deleteWallet(String uuid, String userId, String walletId) {
         CompletableFuture<InternalResponseStatus> future;
 
-        transactionCompleted.readLock().lock();
+        completedTransactionsLock.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
             if (completed != null) {
@@ -102,7 +101,7 @@ public class NodeState {
 
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         } finally {
-            transactionCompleted.readLock().unlock();
+            completedTransactionsLock.readLock().unlock();
         }
 
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
@@ -118,7 +117,7 @@ public class NodeState {
     public InternalResponseStatus transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         CompletableFuture<InternalResponseStatus> future;
 
-        InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(srcUserId, srcWalletId, dstWalletId, amount);
+        InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(uuid, srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
         Wallet srcWallet = this.wallets.get(srcWalletId);
@@ -145,14 +144,24 @@ public class NodeState {
 
         InternalResponseStatus executedResponseStatus = validateExecuteTransfer(srcWallet, dstWallet, amount);
         if (executedResponseStatus == InternalResponseStatus.EXECUTED_LOCALY) {
-            Debug.log("Optimized: Executing transfer locally.\n");
+            completedTransactionsLock.writeLock().lock();
+
+            if (completedTransactions.containsKey(uuid)) {
+                System.err.println("Duplicate transaction: " + uuid);
+                completedTransactionsLock.writeLock().unlock();
+                return InternalResponseStatus.DUPLICATE_TRANSACTION;
+            }
             srcWallet.setBalance(srcWallet.getBalance() - amount);
             dstWallet.setBalance(dstWallet.getBalance() + amount);
             completedTransactions.put(uuid, InternalResponseStatus.OK);
+            Debug.log("Optimized: Executing transfer locally.\n");
+            completedTransactionsLock.writeLock().unlock();
+
+
             return executedResponseStatus;
         }
 
-        transactionCompleted.readLock().lock();
+        completedTransactionsLock.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
             if (completed != null) {
@@ -161,7 +170,7 @@ public class NodeState {
 
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         } finally {
-            transactionCompleted.readLock().unlock();
+            completedTransactionsLock.readLock().unlock();
         }
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
         //TODO verificar estes locks (deve ser aqui?)
@@ -180,10 +189,14 @@ public class NodeState {
      * Validates static condtions to Transfer
      * (if any state allows this transaction to be executed)
      */
-    private InternalResponseStatus validateTransferArgs(String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+    private InternalResponseStatus validateTransferArgs(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
+        if (pendingTransactions.containsKey(uuid) || completedTransactions.containsKey(uuid)) {
+            System.err.println("Duplicate transaction: " + uuid);
+            return InternalResponseStatus.DUPLICATE_TRANSACTION;
+        }
         if (srcUserId == null || !validFormat(srcUserId)) {
-                System.err.println("Bad user id: " + srcUserId);
-                return InternalResponseStatus.BAD_USER_FORMAT;
+            System.err.println("Bad user id: " + srcUserId);
+            return InternalResponseStatus.BAD_USER_FORMAT;
         }
         if (srcWalletId == null || !validFormat(srcWalletId)) {
             System.err.println("Bad wallet id: " + srcWalletId);
@@ -238,7 +251,6 @@ public class NodeState {
 
         second.writeLock().unlock();
         first.writeLock().unlock();
-
     }
 
     public ReadResult readBalance(String walletId, int blockNumber) {
@@ -250,7 +262,7 @@ public class NodeState {
                 Debug.log("\n-----\nNode: waiting for node to update its blockchain to send an updated balance!\n");
                 future.get();
             } catch (ExecutionException | InterruptedException e ) {
-                blockCompleted.readLock().unlock();  
+                blockCompleted.readLock().unlock();
                 return new ReadResult(-1L, -1);
             } 
         }
@@ -292,10 +304,11 @@ public class NodeState {
         List<TransactionRecord> block_transactions = block.getTransactions();
 
         for (TransactionRecord record : block_transactions) {
+            if (completedTransactions.containsKey(record.getUuid())) {continue;}
+
             InternalResponseStatus requestStatus = executeTransaction(record);
 
-            node_transaction_counter++;
-            transactionCompleted.writeLock().lock();
+            completedTransactionsLock.writeLock().lock();
             try {
                 CompletableFuture<InternalResponseStatus> future = pendingTransactions.remove(record.getUuid());
 
@@ -305,7 +318,7 @@ public class NodeState {
 
                 completedTransactions.put(record.getUuid(), requestStatus);
             } finally {
-                transactionCompleted.writeLock().unlock();
+                completedTransactionsLock.writeLock().unlock();
             }
         }
         synchronized (blocksLock) {
@@ -388,8 +401,16 @@ public class NodeState {
             return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
 
-        srcWallet.writeLock().lock();
-        dstWallet.writeLock().lock();
+        Wallet first = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? srcWallet
+            : dstWallet;
+
+        Wallet second = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
+            ? dstWallet
+            : srcWallet;
+
+        first.writeLock().lock();
+        second.writeLock().lock();
 
         try {
             InternalResponseStatus status = canTransfer(srcWallet, record.getSrcUserId(), record.getAmount());
@@ -402,8 +423,8 @@ public class NodeState {
             Debug.log("Transferred: " + record.getAmount() + " : " + record.getSrcWalletId() + " > " + record.getDstWalletId());
             return InternalResponseStatus.OK;
         } finally {
-            dstWallet.writeLock().unlock();
-            srcWallet.writeLock().unlock();
+            second.writeLock().unlock();
+            first.writeLock().unlock();
         }
     }
     
