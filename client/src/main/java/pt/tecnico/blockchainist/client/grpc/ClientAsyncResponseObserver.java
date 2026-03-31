@@ -30,7 +30,8 @@ public class ClientAsyncResponseObserver<Response> implements StreamObserver<Res
 
     @Override
     public void onError(Throwable throwable) {
-        processor.handleError(this.uuid, (StatusRuntimeException) throwable );
+        String errorMessage = ((StatusRuntimeException) throwable).getStatus().getDescription();
+        processor.handleError(this.uuid, errorMessage);
     }
 
     @Override

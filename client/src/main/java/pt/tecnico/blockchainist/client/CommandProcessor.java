@@ -1,5 +1,8 @@
 package pt.tecnico.blockchainist.client;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -229,9 +232,10 @@ public class CommandProcessor {
             }
 
         } catch (StatusRuntimeException error) {
-            handleError(request.getUuid(), error);
+            handleError(request.getUuid(), error.getStatus().getDescription());
+        } catch (SignatureException | NoSuchAlgorithmException | InvalidKeyException e) {
+            handleError(request.getUuid(), "Error occurred while signing the request");
         }
-
     }
 
     public void concludeOperation(String uuid, String resultToPrint){
@@ -240,11 +244,11 @@ public class CommandProcessor {
         displaySuccessOperation(request.getCommandNumber(),"OK", resultToPrint);
     }
 
-    public void handleError(String uuid, StatusRuntimeException e) {
+    public void handleError(String uuid, String errorMessage) {
         PendingRequest request = pendingRequests.get(uuid); 
-
         pendingRequests.remove(uuid);
-        displayErrorOperation(request.getCommandNumber(), e.getStatus().getDescription());
+
+        displayErrorOperation(request.getCommandNumber(), errorMessage);
     }
 
     public synchronized static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {

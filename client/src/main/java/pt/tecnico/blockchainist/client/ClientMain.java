@@ -37,7 +37,7 @@ public class ClientMain {
                 PrivateKey privateKey;
                 privateKey = loadPrivateKey(userId + ".priv");
                 privateKeys.put(userId, privateKey);
-                System.out.println("User Private Key for " + userId + " loaded successfully."); // TODO melhorar get good meter debugs do mike mentira pedro
+                Debug.log("User Private Key for  " + userId + "loaded successfully");
             } catch (Exception e) {
                 System.err.println("Error loading private key for user " + userId + ": " + e.getMessage());
                 return;

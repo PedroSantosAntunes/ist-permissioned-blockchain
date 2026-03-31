@@ -51,7 +51,7 @@ public class ClientNodeService {
     }
 
 
-	public void createWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking) {
+	public void createWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
 		// Build Create Transaction
 		CreateWalletRequest request = CreateWalletRequest.newBuilder()
 			.setUuid(uuid)
@@ -61,12 +61,7 @@ public class ClientNodeService {
 		Transaction transaction = Transaction.newBuilder().setCreateWallet(request).build();
 		
 		// Sign Transaction
-		SignedTransaction signedRequest = null;
-		try {
-			signedRequest = signRequest(transaction, userId);
-		} catch (SignatureException | NoSuchAlgorithmException | InvalidKeyException e) {
-			System.err.println("Acunamatatá"); // TODO melhorar get good meter debugs do mike
-		}
+		SignedTransaction signedRequest = signRequest(transaction, userId);
 
 		Debug.log("\n-----\nClient: Sending create wallet request!\n" + request);
 
@@ -87,7 +82,7 @@ public class ClientNodeService {
 		}
 	}
 
-	public void deleteWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking){
+	public void deleteWallet(String uuid, String userId, String walletId, Integer delay, Boolean isBlocking) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
 		// Build Delete Transaction
 		DeleteWalletRequest request = DeleteWalletRequest.newBuilder()
 			.setUuid(uuid)
@@ -97,12 +92,8 @@ public class ClientNodeService {
 		Transaction transaction = Transaction.newBuilder().setDeleteWallet(request).build();
 		
 		// Sign Transaction
-		SignedTransaction signedRequest = null;
-		try {
-			signedRequest = signRequest(transaction, userId);
-		} catch (SignatureException | NoSuchAlgorithmException | InvalidKeyException e) {
-			System.err.println("Acunamatatá"); // TODO melhorar get good meter debugs do mike
-		}
+		SignedTransaction signedRequest = signRequest(transaction, userId);
+
 		Debug.log("\n-----\nClient: Sending delete wallet request!\n" + request);
 
 		// Call stub with delay header and deadline
@@ -150,7 +141,7 @@ public class ClientNodeService {
 		return -1L; // Placeholder return value for async case
 	}
 
-	public void transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, long value, Integer delay, Boolean isBlocking){
+	public void transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, long value, Integer delay, Boolean isBlocking) throws SignatureException, NoSuchAlgorithmException, InvalidKeyException {
 		// Build Transfer Transaction
 		TransferRequest request = TransferRequest.newBuilder()
 			.setUuid(uuid)
@@ -162,12 +153,7 @@ public class ClientNodeService {
 		Transaction transaction = Transaction.newBuilder().setTransfer(request).build();
 		
 		// Sign Transaction
-		SignedTransaction signedRequest = null;
-		try {
-			signedRequest = signRequest(transaction, srcUserId);
-		} catch (SignatureException | NoSuchAlgorithmException | InvalidKeyException e) {
-			System.err.println("Acunamatatá");	// TODO melhorar get good meter debugs do mike
-		}
+		SignedTransaction signedRequest = signRequest(transaction, srcUserId);
 
 		Debug.log("\n-----\nClient: Sending transfer request!\n" + request);
 

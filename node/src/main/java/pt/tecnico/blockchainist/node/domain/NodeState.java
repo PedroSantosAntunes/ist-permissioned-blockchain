@@ -200,7 +200,7 @@ public class NodeState {
         // user doesn't belong to this organization
         if (!AuthInfo.getOrganization(srcUserId).equals(this.organization)) {
             System.err.println("User is of wrong organization");
-            return InternalResponseStatus.NOT_AUTHORIZED;
+            return InternalResponseStatus.WRONG_ORGANIZATION;
         }
         return InternalResponseStatus.OK;
     }
