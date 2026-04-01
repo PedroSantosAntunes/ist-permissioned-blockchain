@@ -104,8 +104,9 @@ public class NodeState {
             completedTransactionsLock.readLock().unlock();
         }
 
-
+        
         // TODO - increase counter do delete para a wallet
+        // Increase the number of pending deletes associated to the wallet
 
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
 
@@ -151,6 +152,11 @@ public class NodeState {
         InternalResponseStatus executedResponseStatus = validateExecuteTransfer(srcWallet, dstWallet, amount);
         if (executedResponseStatus == InternalResponseStatus.EXECUTED_LOCALY) {
             completedTransactionsLock.writeLock().lock();
+
+            // TODO
+            // Check if the balance is enough with the deficit
+            // Check if none of the wallets has pending deletes
+            // if one of the checks fails, send to sequencer
 
             if (completedTransactions.containsKey(uuid)) {
                 System.err.println("Duplicate transaction: " + uuid);

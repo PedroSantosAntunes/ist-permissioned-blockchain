@@ -2,6 +2,7 @@ package pt.tecnico.blockchainist.node.domain;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Wallet {
@@ -9,17 +10,17 @@ public class Wallet {
     private String walletId;
     private String userId;
     private long balance;
-    private boolean pendingDelete;
 
-    private final AtomicInteger deleteCounter = new AtomicInteger(0);
-    private final AtomicInteger transferCounter = new AtomicInteger(0);
+    // private int pendingDeleteCounter;
+    // private long pendingDeficitAmount;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Wallet(String walletId, String userId, long balance){
         this.walletId = walletId;
         this.userId = userId;
         this.balance = balance;
-        this.pendingDelete = false;
+        // this.pendingDeficitAmount = 0;
+        // this.pendingDeleteCounter = 0;
     }
 
     public String getWalletId(){
@@ -32,14 +33,6 @@ public class Wallet {
 
     public long getBalance(){
         return this.balance;
-    }
-
-    public void setPendingDelete(boolean value) {
-        this.pendingDelete = value;
-    }
-
-    public boolean getPendingDelete() {
-        return this.pendingDelete;
     }
 
     public void setBalance(long newBalance){
@@ -55,30 +48,30 @@ public class Wallet {
     }
 
     // Delete counter methods
-    public boolean isDeleting() {
-        return deleteCounter.get() > 0;
-    }
+    // public boolean isDeleting() {
+    //     return pendingDeleteCounter > 0;
+    // }
 
-    public void incrementDeleting() {
-        deleteCounter.incrementAndGet();
-    }
+    // public void incrementDeleting() {
+    //     pendingDeleteCounter++;
+    // }
 
-    public void decrementDeleting() {
-        deleteCounter.decrementAndGet();
-    }
+    // public void decrementDeleting() {
+    //     pendingDeleteCounter--;
+    // }
 
-    // Transfer counter methods
-    public boolean isTransferring() {
-        return transferCounter.get() > 0;
-    }
+    // // Transfer counter methods
+    // public boolean hasSpendableBalance(long value) {
+    //     return value <= balance - pendingDeficitAmount;
+    // }
 
-    public void incrementTransfer() {
-        transferCounter.incrementAndGet();
-    }
+    // public void incrementTransfer(Long amount) {
+    //     pendingDeficitAmount += amount;
+    // }
 
-    public void decrementTransfer() {
-        transferCounter.decrementAndGet();
-    }
+    // public void decrementTransfer(Long amount) {
+    //     pendingDeficitAmount -= amount;
+    // }
 
     @Override
     public String toString() {
