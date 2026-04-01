@@ -319,9 +319,8 @@ public class CommandProcessor {
 
         try {
             int nodeIndex = Integer.parseInt(split[3]);
-            String org = indexToOrganization(nodeIndex);
-            if (!this.nodes.containsKey(org)) {
-                throw new IllegalArgumentException("No connection found for node " + nodeIndex + " (" + org + ")");
+            if (!this.nodes.containsKey(nodeIndex)) {
+                throw new IllegalArgumentException("No connection found for node " + nodeIndex);
             }
             if (Integer.parseInt(split[4]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
@@ -347,9 +346,8 @@ public class CommandProcessor {
 
         try {
             int nodeIndex = Integer.parseInt(split[3]);
-            String org = indexToOrganization(nodeIndex);
-            if (!this.nodes.containsKey(org)) {
-                throw new IllegalArgumentException("No connection found for node " + nodeIndex + " (" + org + ")");
+            if (!this.nodes.containsKey(nodeIndex)) {
+                throw new IllegalArgumentException("No connection found for node " + nodeIndex);
             }
             if (Integer.parseInt(split[4]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
@@ -371,9 +369,8 @@ public class CommandProcessor {
 
         try {
             int nodeIndex = Integer.parseInt(split[2]);
-            String org = indexToOrganization(nodeIndex);
-            if (!this.nodes.containsKey(org)) {
-                throw new IllegalArgumentException("No connection found for node " + nodeIndex + " (" + org + ")");
+            if (!this.nodes.containsKey(nodeIndex)) {
+                throw new IllegalArgumentException("No connection found for node " + nodeIndex);
             }
             if (Integer.parseInt(split[3]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
@@ -406,9 +403,8 @@ public class CommandProcessor {
                 throw new IllegalArgumentException("Amount cannot be negative");
             }
             int nodeIndex = Integer.parseInt(split[5]);
-            String org = indexToOrganization(nodeIndex);
-            if (!this.nodes.containsKey(org)) {
-                throw new IllegalArgumentException("No connection found for node " + nodeIndex + " (" + org + ")");
+            if (!this.nodes.containsKey(nodeIndex)) {
+                throw new IllegalArgumentException("No connection found for node " + nodeIndex);
             }
             if (Integer.parseInt(split[6]) < 0) {
                 throw new IllegalArgumentException("Node delay cannot be negative");
@@ -426,9 +422,8 @@ public class CommandProcessor {
 
         try {
             int nodeIndex = Integer.parseInt(split[1]);
-            String org = indexToOrganization(nodeIndex);
-            if (!this.nodes.containsKey(org)) {
-                throw new IllegalArgumentException("No connection found for node " + nodeIndex + " (" + org + ")");
+            if (!this.nodes.containsKey(nodeIndex)) {
+                throw new IllegalArgumentException("No connection found for node " + nodeIndex);
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Expected node index to be an integer");

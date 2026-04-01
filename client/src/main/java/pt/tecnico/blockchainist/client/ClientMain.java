@@ -76,7 +76,7 @@ public class ClientMain {
                     printUsage();
                     return;
                 }
-                if (AuthInfo.getAllOrganizations().contains(organization)) {
+                if (!AuthInfo.getAllOrganizations().contains(organization)) {
                     System.err.println("Invalid organization: " + organization);
                     printUsage();
                     return;

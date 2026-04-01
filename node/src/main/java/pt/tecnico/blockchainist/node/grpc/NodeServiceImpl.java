@@ -215,6 +215,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
                 break;
             case WRONG_ORGANIZATION:
                 responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: User does not belong to this organization").asRuntimeException());
+                break;
             default:
                 responseObserver.onError(UNKNOWN.withDescription("Unknown internal error").asRuntimeException());
                 break;
