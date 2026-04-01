@@ -6,14 +6,14 @@ public class PendingRequest {
     private String type;
 
     private String uuid;
-    private String org;
+    private Integer orgIndex;
     private String[] split;
     private Boolean isBlocking;
 
-    public PendingRequest(long commandNumber, String type, String uuid, String org, String[] split, boolean isBlocking) {
+    public PendingRequest(long commandNumber, String type, String uuid, Integer orgIndex, String[] split, boolean isBlocking) {
         this.commandNumber = commandNumber; 
         this.type = type;
-        this.org = org;
+        this.orgIndex = orgIndex;
         this.uuid = uuid;
         this.split = split;
         this.isBlocking = isBlocking;
@@ -39,7 +39,7 @@ public class PendingRequest {
         return this.isBlocking;
     }
 
-    public String getOrganization() {
-        return this.org;
+    public Integer getOrgIndex() {
+        return this.orgIndex;
     }
 }

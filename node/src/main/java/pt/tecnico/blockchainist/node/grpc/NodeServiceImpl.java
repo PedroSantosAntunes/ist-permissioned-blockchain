@@ -75,7 +75,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
             Debug.log("\n-----\nNode: Sending delete wallet response!\n" + response);
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        }  
+        } 
     }
 
     @Override
@@ -214,7 +214,7 @@ public class NodeServiceImpl extends NodeServiceGrpc.NodeServiceImplBase{
                 responseObserver.onError(INVALID_ARGUMENT.withDescription("PreCondition Required: amount needs to be positive").asRuntimeException());
                 break;
             case WRONG_ORGANIZATION:
-                responseObserver.onError(PERMISSION_DENIED.withDescription("Wrong organization.").asRuntimeException());
+                responseObserver.onError(PERMISSION_DENIED.withDescription("Permission Required: User does not belong to this organization").asRuntimeException());
             default:
                 responseObserver.onError(UNKNOWN.withDescription("Unknown internal error").asRuntimeException());
                 break;

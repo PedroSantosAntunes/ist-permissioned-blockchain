@@ -38,12 +38,12 @@ public class CommandProcessor {
 
     private final AtomicLong commandCounter = new AtomicLong(0);
 
-    private Map<String, ClientNodeService> nodes = new HashMap<>(); // <ORG, ClientNodeService>
+    private Map<Integer, ClientNodeService> nodes = new HashMap<>(); // <ORG_INDEX_TO_THIS_CLIENT, ClientNodeService>
 
     private final ConcurrentHashMap<String, PendingRequest> pendingRequests = new ConcurrentHashMap<>(); // <UUID, PENDING REQUEST>
     private int lastReadBlock = 0;
 
-    public CommandProcessor(Map<String, ClientNodeService> nodes) {
+    public CommandProcessor(Map<Integer, ClientNodeService> nodes) {
         this.nodes = nodes;
     }
 
@@ -129,9 +129,9 @@ public class CommandProcessor {
         Long commandNumber = this.commandCounter.incrementAndGet();
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? CREATE_BLOCKING : CREATE_ASYNC;
-        String org = indexToOrganization(Integer.parseInt(split[3]));
+        Integer orgIndex = Integer.parseInt(split[3]);
 
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, orgIndex, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
@@ -147,9 +147,9 @@ public class CommandProcessor {
         Long commandNumber = this.commandCounter.incrementAndGet();
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? DELETE_BLOCKING : DELETE_ASYNC;
-        String org = indexToOrganization(Integer.parseInt(split[3]));
+        Integer orgIndex = Integer.parseInt(split[3]);
         
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, orgIndex, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -167,9 +167,9 @@ public class CommandProcessor {
 
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? BALANCE_BLOCKING : BALANCE_ASYNC;
-        String org = indexToOrganization(Integer.parseInt(split[2]));
-        
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
+        Integer orgIndex = Integer.parseInt(split[2]);
+
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, orgIndex, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         
         callNode(request);
@@ -187,15 +187,15 @@ public class CommandProcessor {
 
         String uuid = UUID.randomUUID().toString();
         String type = isBlocking ? TRANSFER_BLOCKING : TRANSFER_ASYNC;
-        String org = indexToOrganization(Integer.parseInt(split[5]));
+        Integer orgIndex = Integer.parseInt(split[5]);
 
-        PendingRequest request = new PendingRequest(commandNumber, type, uuid, org, split.clone(), isBlocking);
+        PendingRequest request = new PendingRequest(commandNumber, type, uuid, orgIndex, split.clone(), isBlocking);
         pendingRequests.put(uuid, request);
         callNode(request);
     }
 
     private void callNode(PendingRequest request) {
-        ClientNodeService node = nodes.get(request.getOrganization());
+        ClientNodeService node = nodes.get(request.getOrgIndex());
         String requestType = request.getType();
         String resultToPrint = null;
         try {
@@ -277,8 +277,8 @@ public class CommandProcessor {
 
         Long commandNumber = this.commandCounter.incrementAndGet();
 
-        String org = indexToOrganization(Integer.parseInt(split[1]));
-        ClientNodeService node = nodes.get(org);
+        Integer orgIndex = Integer.parseInt(split[1]);
+        ClientNodeService node = nodes.get(orgIndex);
         
         try{
             String transactions = node.getBlockchainState();
@@ -459,13 +459,5 @@ public class CommandProcessor {
                 "- B <node_index>\n" +
                 "- P <integer>\n" +
                 "- X\n");
-    }
-
-    private String indexToOrganization(Integer index) {
-        String organization = AuthInfo.indexToOrganization(index);
-        if (organization == null) {
-            throw new IllegalArgumentException("Organization not found: " + index);
-        }
-        return organization;
     }
 }

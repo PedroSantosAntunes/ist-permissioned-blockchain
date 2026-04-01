@@ -1,6 +1,7 @@
 package pt.tecnico.blockchainist.auth;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class AuthInfo {
@@ -17,10 +18,10 @@ public final class AuthInfo {
         "Iris", "OrgC"
     );
 
-    private static final Map<Integer, String> INDEX_TO_ORG = Map.of(
-        0, "OrgA",
-        1, "OrgB",
-        2, "OrgC"
+    private static final List<String> ORGANIZATIONS = List.of(
+        "OrgA",
+        "OrgB",
+        "OrgC"
     );
 
     private AuthInfo() {
@@ -34,8 +35,8 @@ public final class AuthInfo {
         return USER_TO_ORG.containsKey(userId);
     }
 
-    public static String indexToOrganization(Integer index) {
-        return INDEX_TO_ORG.get(index);
+    public static ArrayList<String> getAllOrganizations() {
+        return new ArrayList<>(ORGANIZATIONS);
     }
 
     public static ArrayList<String> getAllUsers() {

@@ -18,7 +18,11 @@ import pt.tecnico.blockchainist.debug.Debug;
 public class ClientMain {
 
     public static void main(String[] args) {
-        Map<String, ClientNodeService> nodes = new HashMap<>();
+        
+        Map<Integer, ClientNodeService> nodes = new HashMap<>();
+        ArrayList<String> orgNames = new ArrayList<>();
+        int orgIndex = 0;
+        Map<String, PrivateKey> privateKeys = new HashMap<>();
 
         System.out.println(ClientMain.class.getSimpleName());
         Debug.log("Debug is ON");
@@ -31,7 +35,6 @@ public class ClientMain {
         }
 
         // Load all users private keys to send to NodeClientService
-        Map<String, PrivateKey> privateKeys = new HashMap<>();
         for (String userId : AuthInfo.getAllUsers()) {
             try {
                 PrivateKey privateKey;
@@ -68,12 +71,18 @@ public class ClientMain {
                     return;
                 }
                 String organization = split[2];
-                if (nodes.containsKey(organization)) {
+                if (orgNames.contains(organization)) {
                     System.err.println("Node for org already exists: " + organization);
                     printUsage();
                     return;
                 }
-                nodes.put(organization, new ClientNodeService(host, port, organization, privateKeys));
+                if (AuthInfo.getAllOrganizations().contains(organization)) {
+                    System.err.println("Invalid organization: " + organization);
+                    printUsage();
+                    return;
+                }
+                orgNames.add(organization);
+                nodes.put(orgIndex++, new ClientNodeService(host, port, organization, privateKeys));
             }
 
             CommandProcessor processor = new CommandProcessor(nodes);
@@ -89,7 +98,7 @@ public class ClientMain {
         }
     }
 
-    private static void terminateNodeChannels(Map<String, ClientNodeService> nodes) {
+    private static void terminateNodeChannels(Map<Integer, ClientNodeService> nodes) {
         for (ClientNodeService node : nodes.values()) {
             if (node != null) 
                 node.closeChannel();

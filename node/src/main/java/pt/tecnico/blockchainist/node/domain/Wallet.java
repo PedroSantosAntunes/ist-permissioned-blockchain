@@ -1,6 +1,7 @@
 package pt.tecnico.blockchainist.node.domain;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Wallet {
@@ -10,7 +11,8 @@ public class Wallet {
     private long balance;
     private boolean pendingDelete;
 
-    private final AtomicBoolean deleting = new AtomicBoolean(false);
+    private final AtomicInteger deleteCounter = new AtomicInteger(0);
+    private final AtomicInteger transferCounter = new AtomicInteger(0);
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Wallet(String walletId, String userId, long balance){
@@ -52,12 +54,30 @@ public class Wallet {
         return lock.writeLock();
     }
 
+    // Delete counter methods
     public boolean isDeleting() {
-        return deleting.get();
+        return deleteCounter.get() > 0;
     }
 
-    public void setDeleting(boolean value) {
-        deleting.set(value);
+    public void incrementDeleting() {
+        deleteCounter.incrementAndGet();
+    }
+
+    public void decrementDeleting() {
+        deleteCounter.decrementAndGet();
+    }
+
+    // Transfer counter methods
+    public boolean isTransferring() {
+        return transferCounter.get() > 0;
+    }
+
+    public void incrementTransfer() {
+        transferCounter.incrementAndGet();
+    }
+
+    public void decrementTransfer() {
+        transferCounter.decrementAndGet();
     }
 
     @Override

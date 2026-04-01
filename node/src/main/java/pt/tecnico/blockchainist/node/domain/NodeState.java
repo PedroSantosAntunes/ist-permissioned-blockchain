@@ -25,20 +25,14 @@ public class NodeState {
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
     private final Map<String, Wallet> wallets = new ConcurrentHashMap<>();
-
-    private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
-
     private final Map<String, CompletableFuture<InternalResponseStatus>> pendingTransactions = new ConcurrentHashMap<>();
     private final Map<String, InternalResponseStatus> completedTransactions = new ConcurrentHashMap<>();
-
     private final ReentrantReadWriteLock completedTransactionsLock = new ReentrantReadWriteLock();
-    private final ReentrantReadWriteLock blockCompleted = new ReentrantReadWriteLock();
-
-
-    private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
 
     private int node_block_counter = 0;
-    
+    private final ArrayList<BlockRecord> blocks = new ArrayList<BlockRecord>();
+    private final ReentrantReadWriteLock blockCompleted = new ReentrantReadWriteLock();
+    private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
     private final Object blocksLock = new Object();
 
     public static final String BC_WALLET = "bc";
@@ -60,15 +54,18 @@ public class NodeState {
     public InternalResponseStatus createWallet(String uuid, String userId, String walletId) {
         CompletableFuture<InternalResponseStatus> future;
 
+        InternalResponseStatus isOrgUser = verifyUserOrganization(userId);
+        if (isOrgUser != InternalResponseStatus.OK) { return InternalResponseStatus.WRONG_ORGANIZATION; }
+
         completedTransactionsLock.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
             if (completed != null) {
                 return completed;
             }
-        
+
             InternalResponseStatus argsInternalResponseStatus = validateCreateWalletArgs(userId, walletId);
-                
+
             if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
@@ -89,6 +86,9 @@ public class NodeState {
     public InternalResponseStatus deleteWallet(String uuid, String userId, String walletId) {
         CompletableFuture<InternalResponseStatus> future;
 
+        InternalResponseStatus isOrgUser = verifyUserOrganization(userId);
+        if (isOrgUser != InternalResponseStatus.OK) { return InternalResponseStatus.WRONG_ORGANIZATION; }
+
         completedTransactionsLock.readLock().lock();
         try {
             InternalResponseStatus completed = completedTransactions.get(uuid);
@@ -104,6 +104,9 @@ public class NodeState {
             completedTransactionsLock.readLock().unlock();
         }
 
+
+        // TODO - increase counter do delete para a wallet
+
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
 
         try {
@@ -116,6 +119,9 @@ public class NodeState {
 
     public InternalResponseStatus transfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
         CompletableFuture<InternalResponseStatus> future;
+
+        InternalResponseStatus isOrgUser = verifyUserOrganization(srcUserId);
+        if (isOrgUser != InternalResponseStatus.OK) { return InternalResponseStatus.WRONG_ORGANIZATION; }
 
         InternalResponseStatus argsInternalResponseStatus = validateTransferArgs(uuid, srcUserId, srcWalletId, dstWalletId, amount);
         if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
@@ -172,8 +178,11 @@ public class NodeState {
         } finally {
             completedTransactionsLock.readLock().unlock();
         }
+
+        // TODO - increase counter do transfer para a src wallet
+
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
-        //TODO verificar estes locks (deve ser aqui?)
+
         second.writeLock().unlock();
         first.writeLock().unlock();
 
@@ -210,11 +219,7 @@ public class NodeState {
             System.err.println(amount + "should be positive");
             return InternalResponseStatus.NEGATIVE_AMOUNT;
         }
-        // user doesn't belong to this organization
-        if (!AuthInfo.getOrganization(srcUserId).equals(this.organization)) {
-            System.err.println("User is of wrong organization");
-            return InternalResponseStatus.WRONG_ORGANIZATION;
-        }
+        
         return InternalResponseStatus.OK;
     }
 
@@ -304,7 +309,11 @@ public class NodeState {
         List<TransactionRecord> block_transactions = block.getTransactions();
 
         for (TransactionRecord record : block_transactions) {
-            if (completedTransactions.containsKey(record.getUuid())) {continue;}
+            // Avoids to duplicate a transaction that was optimizable and executed locally 
+            if (completedTransactions.containsKey(record.getUuid())) {
+                // TODO - decrease counter do transfer para a src wallet
+                continue;
+            }
 
             InternalResponseStatus requestStatus = executeTransaction(record);
 
@@ -370,9 +379,16 @@ public class NodeState {
 
         try {
             InternalResponseStatus status = canDeleteWallet(wallet, record.getUserId());
-            if (status != InternalResponseStatus.OK) { return status; }
+            
+            if (status != InternalResponseStatus.OK) { 
+                // TODO - decrease counter (verificar se pertence a esta orgA) do delete para a wallet
+                return status; 
+            }
         
             wallets.remove(record.getWalletId());
+
+            // TODO - decrease counter (verificar se pertence a esta orgA) do delete para a wallet
+
             Debug.log("Wallet deleted: " + record.getWalletId());
 
             return InternalResponseStatus.OK;
@@ -398,6 +414,7 @@ public class NodeState {
         }
         if (dstWallet == null){ 
             System.err.println("Wallet id does not exist: " + record.getDstWalletId());
+            // TODO decrease counter (verificar se pertence a esta orgA) do transfer para a scrWallet
             return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
 
@@ -419,6 +436,8 @@ public class NodeState {
 
             srcWallet.setBalance(srcWallet.getBalance() - record.getAmount());
             dstWallet.setBalance(dstWallet.getBalance() + record.getAmount());
+
+            // TODO decrease counter (verificar se pertence a esta orgA) do transfer para a scrWallet
 
             Debug.log("Transferred: " + record.getAmount() + " : " + record.getSrcWalletId() + " > " + record.getDstWalletId());
             return InternalResponseStatus.OK;
@@ -534,6 +553,15 @@ public class NodeState {
 
     private boolean isZeroBalance(long balance) {
         return balance == 0;
+    }
+
+    private InternalResponseStatus verifyUserOrganization(String userId) {
+        if (!AuthInfo.getOrganization(userId).equals(this.organization)) {
+            System.err.println("User is of wrong organization");
+            return InternalResponseStatus.WRONG_ORGANIZATION;
+        }
+
+        return InternalResponseStatus.OK;
     }
 
 }
