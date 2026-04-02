@@ -115,7 +115,6 @@ public class SequencerState {
             scheduledTask.cancel(false);
         }
         scheduledTask = scheduler.schedule(() -> {
-                // Debug.log("\n-----\nSequencer: Create block timeout reached!\n");
                 createBlock();
             }, CREATE_BLOCK_SECONDS, TimeUnit.SECONDS);
     }

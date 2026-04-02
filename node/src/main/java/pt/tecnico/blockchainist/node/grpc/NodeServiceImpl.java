@@ -8,11 +8,7 @@ import pt.tecnico.blockchainist.status.InternalResponseStatus;
 import pt.tecnico.blockchainist.grpc.*;
 
 import static io.grpc.Status.*;
-import io.grpc.Context;
 
-
-import java.io.InputStream;
-import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.ArrayList;

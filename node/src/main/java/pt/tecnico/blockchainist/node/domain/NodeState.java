@@ -426,8 +426,7 @@ public class NodeState {
     }
 
     private InternalResponseStatus executeDeleteWallet(DeleteWalletRecord record) {
-        //NOVA LOGICA
-        // so verificar pending wallet transactions se transaction for da org do node
+        // Only increments pending wallet delete counter if the wallet belongs to the node organization 
         if (AuthInfo.getOrganization(record.getUserId()).equals(this.organization)) {
             PendingWalletTransactions pwt = pendingWalletTransactions.get(record.getWalletId());
             pwt.getLock().lock();
@@ -463,7 +462,6 @@ public class NodeState {
     }
 
     private InternalResponseStatus executeTransfer(TransferRecord record) {
-        //NOVA LOGICA
         if (AuthInfo.getOrganization(record.getSrcUserId()).equals(this.organization)) {
             PendingWalletTransactions pwt = pendingWalletTransactions.get(record.getSrcWalletId());
             pwt.getLock().lock();

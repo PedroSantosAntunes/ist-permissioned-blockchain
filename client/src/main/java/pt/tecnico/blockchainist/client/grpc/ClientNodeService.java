@@ -7,16 +7,11 @@ import pt.tecnico.blockchainist.contract.*;
 import pt.tecnico.blockchainist.debug.Debug;
 import io.grpc.Metadata;
 import io.grpc.stub.MetadataUtils;
-import pt.tecnico.blockchainist.client.grpc.*;
 
-import java.io.InputStream;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.security.Signature;

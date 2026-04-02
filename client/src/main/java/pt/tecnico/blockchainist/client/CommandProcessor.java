@@ -3,7 +3,6 @@ package pt.tecnico.blockchainist.client;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -17,8 +16,6 @@ import io.grpc.StatusRuntimeException;
 
 import pt.tecnico.blockchainist.client.domain.PendingRequest;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
-import pt.tecnico.blockchainist.auth.AuthInfo;
-import javax.management.RuntimeErrorException;
 
 public class CommandProcessor {
 

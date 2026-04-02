@@ -3,7 +3,6 @@ package pt.tecnico.blockchainist.client;
 import java.io.InputStream;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.HashMap;

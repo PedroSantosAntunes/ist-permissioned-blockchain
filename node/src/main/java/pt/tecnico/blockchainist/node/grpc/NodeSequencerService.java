@@ -8,12 +8,9 @@ import java.security.Signature;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import pt.tecnico.blockchainist.contract.*;
-import pt.tecnico.blockchainist.grpc.TransactionToRecord;
 import pt.tecnico.blockchainist.record.BlockRecord;
-import pt.tecnico.blockchainist.record.TransactionRecord;
 import pt.tecnico.blockchainist.grpc.BlockToBlockRecord;
 import pt.tecnico.blockchainist.debug.Debug;
-import java.util.ArrayList;
 
 public class NodeSequencerService {
 

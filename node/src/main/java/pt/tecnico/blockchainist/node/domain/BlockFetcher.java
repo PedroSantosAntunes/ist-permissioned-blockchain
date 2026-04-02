@@ -1,7 +1,5 @@
 package pt.tecnico.blockchainist.node.domain;
 
-import pt.tecnico.blockchainist.debug.Debug;
-
 public class BlockFetcher extends Thread {
     private final NodeState state;
 

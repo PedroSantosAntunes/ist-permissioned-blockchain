@@ -124,8 +124,6 @@ public class NodeMain {
         System.err.println("Usage: mvn exec:java -Dexec.args=\"<host>:<port>:<organization> [<host>:<port>:<organization> ...]\"");
     }
 
-    // To Node service Imple
-
     private static PublicKey loadPublicKey(String resourcePath) throws Exception {
         byte[] keyBytes = readResource(resourcePath);
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
