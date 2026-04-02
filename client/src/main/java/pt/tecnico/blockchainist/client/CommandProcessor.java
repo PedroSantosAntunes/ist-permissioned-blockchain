@@ -248,7 +248,6 @@ public class CommandProcessor {
     public void handleError(String uuid, String errorMessage) {
         PendingRequest request = pendingRequests.get(uuid); 
         pendingRequests.remove(uuid);
-        displayErrorOperation(request.getCommandNumber(), errorMessage);
 
         switch (errorMessage) {
             case "UNAVAILABLE", "DEADLINE_EXCEEDED", "CANCELLED":

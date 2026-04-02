@@ -96,3 +96,10 @@ Pass runtime arguments with `-Dexec.args`, for example on the sequencer (port nu
 ```s
 mvn exec:java -Dexec.args="5000 4 5"
 ```
+
+## Run tests
+
+Open directory /tests and run:
+```s
+./start_run_tests.sh
+```

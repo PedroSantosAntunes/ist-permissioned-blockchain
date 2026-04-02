@@ -317,12 +317,16 @@ public class NodeState {
             boolean sufficientBalance = (srcWallet.getBalance() - srcPwt.getDeficitAmount()) >= amount;
 
             if (orgMatches && srcNotDeleted && dstNotDeleted && sufficientBalance) {
+                Debug.log("Node: Transaction can be optimized:\n" +
+                        " - both wallets bellong to the node organization: " + this.organization + "\n" +
+                        " - there are no pending delete requests (src delete counter = " + srcPwt.getDeleteCounter() + ", dst delete counter = " + dstPwt.getDeleteCounter() + ")\n" +
+                        " - there is enough balance, even if all the pending transactions are concluded: Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") >= "+amount+"\n");
                 return InternalResponseStatus.EXECUTED_LOCALY;
             }
-            if (!orgMatches) Debug.log("Node: Transaction not optimized, organization does not match");
-            if (!srcNotDeleted) Debug.log("Node: Transaction not optimized, source delete counter is: " + srcPwt.getDeleteCounter());
-            if (!dstNotDeleted) Debug.log("Node: Transaction not optimized, destination delete counter is: " + dstPwt.getDeleteCounter());
-            if (!sufficientBalance) Debug.log("Node: Transaction not optimized, insufficient balance. Real balance (" + srcWallet.getBalance() + ") - deficit ("+ srcPwt.getDeficitAmount() +") < " + amount);
+            if (!orgMatches) Debug.log("Node: Transaction not optimized, organization does not match!\n");
+            if (!srcNotDeleted) Debug.log("Node: Transaction not optimized, source delete counter is: " + srcPwt.getDeleteCounter()+"\n");
+            if (!dstNotDeleted) Debug.log("Node: Transaction not optimized, destination delete counter is: " + dstPwt.getDeleteCounter()+"\n");
+            if (!sufficientBalance) Debug.log("Node: Transaction not optimized, insufficient balance. Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") < "+amount+"\n");
 
             return InternalResponseStatus.OK;
         } finally {
@@ -616,7 +620,7 @@ public class NodeState {
             return InternalResponseStatus.REMAINING_BALANCE;
         } 
         if (!isAuthorized(wallet, userId)) {
-            System.err.println("Wallet id " + wallet.getWalletId() + "does not belong to user " + userId);
+            System.err.println("Wallet id " + wallet.getWalletId() + " does not belong to user " + userId);
             return InternalResponseStatus.NOT_AUTHORIZED;
         }
         return InternalResponseStatus.OK;

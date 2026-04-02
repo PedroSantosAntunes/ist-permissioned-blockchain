@@ -98,7 +98,7 @@ public class NodeMain {
             try {
                 PublicKey publicKey = loadPublicKey(userId + ".pub");
                 userPublicKeys.put(userId, publicKey);
-                System.out.println("User Public Key for " + userId + " loaded successfully.");
+                Debug.log("User Public Key for " + userId + " loaded successfully.");
             } catch (Exception e) {
                 System.err.println("Error loading public key for user " + userId + ": " + e.getMessage());
                 return;
