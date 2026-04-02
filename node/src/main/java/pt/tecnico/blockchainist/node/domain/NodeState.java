@@ -34,10 +34,7 @@ public class NodeState {
     private final Map<Integer, CompletableFuture<Void>> pendingBlock = new ConcurrentHashMap<>();
     private final Object blocksLock = new Object();
 
-    // NEW LOGIC
     private final Map<String, PendingWalletTransactions> pendingWalletTransactions = new ConcurrentHashMap<>();
-    // TODO nao precisamos deste lock? 
-    // private final ReentrantReadWriteLock pendingWalletTransactionsLock = new ReentrantReadWriteLock();
 
     public static final String BC_WALLET = "bc";
     public static final String BC_NAME = "BC";
@@ -72,15 +69,6 @@ public class NodeState {
 
             if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
-            // // NOVA LOGICA TODO - nao é preciso?
-            // PendingWalletTransactions pwt = pendingWalletTransactions.computeIfAbsent(walletId, k -> new PendingWalletTransactions());
-            // pwt.getLock().lock();
-            // try {
-            //     pwt.incrementCreate();
-            // } finally {
-            //     pwt.getLock().unlock();
-            // }
-
             future = pendingTransactions.computeIfAbsent(uuid, k -> new CompletableFuture<>());
         } finally {
             completedTransactionsLock.readLock().unlock();
@@ -112,7 +100,6 @@ public class NodeState {
             InternalResponseStatus argsInternalResponseStatus = validateDeleteWalletArgs(userId, walletId);
             if (argsInternalResponseStatus != InternalResponseStatus.OK) { return argsInternalResponseStatus; }
 
-            // NOVA LOGICA
             PendingWalletTransactions pwt = pendingWalletTransactions.computeIfAbsent(walletId, k -> new PendingWalletTransactions());
             pwt.getLock().lock();
             try {
@@ -160,7 +147,6 @@ public class NodeState {
             first.writeLock().lock();
             second.writeLock().lock();
 
-            // TODO NAO HA ASSUMPTION?
             InternalResponseStatus impossibleResponseStatus = validateImpossibleTransfer(srcUserId, srcWallet, dstWallet, amount);
             if (impossibleResponseStatus != InternalResponseStatus.OK) {
                 Debug.log("Optimized: Impossible transfer.\n");
@@ -172,11 +158,6 @@ public class NodeState {
             InternalResponseStatus executedResponseStatus = validateExecuteTransfer(srcWallet, dstWallet, amount);
             if (executedResponseStatus == InternalResponseStatus.EXECUTED_LOCALY) {
                 completedTransactionsLock.writeLock().lock();
-
-                // TODO
-                // Check if the balance is enough with the deficit
-                // Check if none of the wallets has pending deletes
-                // if one of the checks fails, send to sequencer
 
                 if (completedTransactions.containsKey(uuid)) {
                     System.err.println("Duplicate transaction: " + uuid);
@@ -206,7 +187,6 @@ public class NodeState {
                 return completed;
             }
 
-            // NOVA LOGICA
             PendingWalletTransactions pwt = pendingWalletTransactions.computeIfAbsent(srcWalletId, k -> new PendingWalletTransactions());
             pwt.getLock().lock();
             try {
@@ -259,40 +239,12 @@ public class NodeState {
         return InternalResponseStatus.OK;
     }
 
-    // TODO N HA ASSUMPITON
     private InternalResponseStatus validateImpossibleTransfer(String userId, Wallet srcWallet, Wallet dstWallet, Long amount) {
-    //     PendingWalletTransactions srcPwt = pendingWalletTransactions.computeIfAbsent(srcWallet.getWalletId(), k -> new PendingWalletTransactions());
-    //     PendingWalletTransactions dstPwt = pendingWalletTransactions.computeIfAbsent(dstWallet.getWalletId(), k -> new PendingWalletTransactions());
-
-    //     PendingWalletTransactions first = srcPwt;
-    //     PendingWalletTransactions second = dstPwt;
-
-    //     String srcId = srcWallet.getWalletId();
-    //     String dstId = dstWallet.getWalletId();
-
-    //     if (srcId.compareTo(dstId) > 0) {
-    //         first = dstPwt;
-    //         second = srcPwt;
-    //     }
-
-    //     first.getLock().lock();
-    //     second.getLock().lock();
-
-    //     try {
-    //         if (srcWallet.getBalance() < amount) return InternalResponseStatus.INSUFFICIENT_BALANCE;
-    //         // src wallet userid is client userid
-    //         if (!srcWallet.getUserId().equals(userId)) return InternalResponseStatus.NOT_AUTHORIZED;
-    //     } finally {
-    //         second.getLock().unlock();
-    //         first.getLock().unlock();
-    //     }
         if (!srcWallet.getUserId().equals(userId)) return InternalResponseStatus.NOT_AUTHORIZED;
-
         return InternalResponseStatus.OK;
     }
 
     private InternalResponseStatus validateExecuteTransfer(Wallet srcWallet, Wallet dstWallet, Long amount) {
-        // dst wallet's user belongs to this org TODO add other ones
         PendingWalletTransactions srcPwt = pendingWalletTransactions.computeIfAbsent(srcWallet.getWalletId(), k -> new PendingWalletTransactions());
         PendingWalletTransactions dstPwt = pendingWalletTransactions.computeIfAbsent(dstWallet.getWalletId(), k -> new PendingWalletTransactions());
 
@@ -310,29 +262,26 @@ public class NodeState {
         first.getLock().lock();
         second.getLock().lock();
 
-        try {
-            boolean orgMatches = AuthInfo.getOrganization(dstWallet.getUserId()).equals(this.organization);
-            boolean srcNotDeleted = srcPwt.getDeleteCounter() == 0;
-            boolean dstNotDeleted = dstPwt.getDeleteCounter() == 0;
-            boolean sufficientBalance = (srcWallet.getBalance() - srcPwt.getDeficitAmount()) >= amount;
+        boolean orgMatches = AuthInfo.getOrganization(dstWallet.getUserId()).equals(this.organization);
+        boolean srcNotDeleted = srcPwt.getDeleteCounter() == 0;
+        boolean dstNotDeleted = dstPwt.getDeleteCounter() == 0;
+        boolean sufficientBalance = (srcWallet.getBalance() - srcPwt.getDeficitAmount()) >= amount;
 
-            if (orgMatches && srcNotDeleted && dstNotDeleted && sufficientBalance) {
-                Debug.log("Node: Transaction can be optimized:\n" +
-                        " - both wallets bellong to the node organization: " + this.organization + "\n" +
-                        " - there are no pending delete requests (src delete counter = " + srcPwt.getDeleteCounter() + ", dst delete counter = " + dstPwt.getDeleteCounter() + ")\n" +
-                        " - there is enough balance, even if all the pending transactions are concluded: Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") >= "+amount+"\n");
-                return InternalResponseStatus.EXECUTED_LOCALY;
-            }
-            if (!orgMatches) Debug.log("Node: Transaction not optimized, organization does not match!\n");
-            if (!srcNotDeleted) Debug.log("Node: Transaction not optimized, source delete counter is: " + srcPwt.getDeleteCounter()+"\n");
-            if (!dstNotDeleted) Debug.log("Node: Transaction not optimized, destination delete counter is: " + dstPwt.getDeleteCounter()+"\n");
-            if (!sufficientBalance) Debug.log("Node: Transaction not optimized, insufficient balance. Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") < "+amount+"\n");
-
-            return InternalResponseStatus.OK;
-        } finally {
-            second.getLock().unlock();
-            first.getLock().unlock();
+        if (orgMatches && srcNotDeleted && dstNotDeleted && sufficientBalance) {
+            Debug.log("Node: Transaction can be optimized:\n" +
+                    " - both wallets bellong to the node organization: " + this.organization + "\n" +
+                    " - there are no pending delete requests (src delete counter = " + srcPwt.getDeleteCounter() + ", dst delete counter = " + dstPwt.getDeleteCounter() + ")\n" +
+                    " - there is enough balance, even if all the pending transactions are concluded: Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") >= "+amount+"\n");
+            return InternalResponseStatus.EXECUTED_LOCALY;
         }
+        if (!orgMatches) Debug.log("Node: Transaction not optimized, organization does not match!\n");
+        if (!srcNotDeleted) Debug.log("Node: Transaction not optimized, source delete counter is: " + srcPwt.getDeleteCounter()+"\n");
+        if (!dstNotDeleted) Debug.log("Node: Transaction not optimized, destination delete counter is: " + dstPwt.getDeleteCounter()+"\n");
+        if (!sufficientBalance) Debug.log("Node: Transaction not optimized, insufficient balance. Real balance ("+srcWallet.getBalance()+") - Deficit ("+srcPwt.getDeficitAmount()+") < "+amount+"\n");
+
+        second.getLock().unlock();
+        first.getLock().unlock();
+        return InternalResponseStatus.OK;
     }
 
     public void optimizedBroadcastTransfer(String uuid, String srcUserId, String srcWalletId, String dstWalletId, Long amount) {
@@ -340,6 +289,20 @@ public class NodeState {
 
         Wallet srcWallet = this.wallets.get(srcWalletId);
         Wallet dstWallet = this.wallets.get(dstWalletId);
+        
+        PendingWalletTransactions srcPwt = pendingWalletTransactions.get(srcWallet.getWalletId());
+        PendingWalletTransactions dstPwt = pendingWalletTransactions.get(dstWallet.getWalletId());
+
+        PendingWalletTransactions pwdFirst = srcPwt;
+        PendingWalletTransactions pwdSecond = dstPwt;
+
+        String srcId = srcWallet.getWalletId();
+        String dstId = dstWallet.getWalletId();
+
+        if (srcId.compareTo(dstId) > 0) {
+            pwdFirst = dstPwt;
+            pwdSecond = srcPwt;
+        }
 
         Wallet first = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
             ? srcWallet
@@ -348,6 +311,9 @@ public class NodeState {
         Wallet second = srcWallet.getWalletId().compareTo(dstWallet.getWalletId()) <= 0
             ? dstWallet
             : srcWallet;
+
+        pwdSecond.getLock().unlock();
+        pwdFirst.getLock().unlock();
 
         second.writeLock().unlock();
         first.writeLock().unlock();
@@ -449,15 +415,6 @@ public class NodeState {
     }
 
     private InternalResponseStatus executeCreateWallet(CreateWalletRecord record) {
-        // //NOVA LOGICA TODO nao é preciso?
-        // PendingWalletTransactions pwt = pendingWalletTransactions.get(record.getWalletId());
-        // pwt.getLock().lock();
-        // try {
-        //     pwt.decrementCreate();
-        // } finally {
-        //     pwt.getLock().unlock();
-        // }
-
         InternalResponseStatus status = canCreateWallet(record.getWalletId());
         if (status != InternalResponseStatus.OK) { return status; }
 
@@ -633,13 +590,13 @@ public class NodeState {
     private InternalResponseStatus canTransfer(Wallet srcWallet, String userId, long amount) {
         
         if (!isAuthorized(srcWallet, userId)) {
-            System.err.println("Wallet id " + srcWallet.getWalletId() + "does not belong to user " + userId);
+            System.err.println("Wallet id " + srcWallet.getWalletId() + " does not belong to user " + userId);
             return InternalResponseStatus.NOT_AUTHORIZED;
         }
 
         long srcBalance = srcWallet.getBalance();
         if (!hasEnoughBalance(srcBalance, amount)) {
-            System.err.println("Wallet id " + srcWallet.getWalletId() + "has not enough money (" + srcWallet.getBalance() + ") to transfer " + amount);
+            System.err.println("Wallet id " + srcWallet.getWalletId() + " has not enough money (" + srcWallet.getBalance() + ") to transfer " + amount);
             return InternalResponseStatus.INSUFFICIENT_BALANCE;
         }
         return InternalResponseStatus.OK;    

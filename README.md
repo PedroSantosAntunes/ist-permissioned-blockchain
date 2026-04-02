@@ -66,21 +66,38 @@ Open directory /sequencer and run:
 mvn exec:java
 ```
 
-On another terminal open /node and run:
+On another 3 terminals open /node and run:
 ```s
-mvn exec:java
+mvn -Ddebug=1 exec:java -Dexec.args="2001 OrgA localhost:3001"
+```
+```s
+mvn -Ddebug=1 exec:java -Dexec.args="2002 OrgB localhost:3001"
+```
+```s
+mvn -Ddebug=1 exec:java -Dexec.args="2003 OrgC localhost:3001"
 ```
 
 Finally
- - either open /client on another terminal and run:
+ - open /client on another terminal and run:
     ```s
-    mvn exec:java
+    mvn exec:java -Dexec.args="localhost:2001:OrgA localhost:2002:OrgB localhost:2003:OrgC"
     ```
 
- - Or open /tests on another terminal and run:
-    ```s
-    ./run_tests.sh
-    ```
+Alternatively:
+Compile in the root directory:  
+```s
+mvn clean install
+```
+
+- Open directory /tests and run:
+```s
+./start.sh
+```
+
+- On another terminal open /client and run:
+```s
+mvn exec:java -Dexec.args="localhost:2001:OrgA localhost:2002:OrgB localhost:2003:OrgC"
+```
 
 
 ## Debug
