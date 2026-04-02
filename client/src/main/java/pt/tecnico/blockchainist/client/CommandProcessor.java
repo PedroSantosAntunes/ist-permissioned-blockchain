@@ -14,10 +14,11 @@ import java.util.regex.Pattern;
 import java.util.UUID;
 
 import io.grpc.StatusRuntimeException;
+
 import pt.tecnico.blockchainist.client.domain.PendingRequest;
 import pt.tecnico.blockchainist.client.grpc.ClientNodeService;
 import pt.tecnico.blockchainist.auth.AuthInfo;
-
+import javax.management.RuntimeErrorException;
 
 public class CommandProcessor {
 
@@ -247,8 +248,24 @@ public class CommandProcessor {
     public void handleError(String uuid, String errorMessage) {
         PendingRequest request = pendingRequests.get(uuid); 
         pendingRequests.remove(uuid);
-
         displayErrorOperation(request.getCommandNumber(), errorMessage);
+
+        switch (errorMessage) {
+            case "UNAVAILABLE", "DEADLINE_EXCEEDED", "CANCELLED":
+                if(request.tryNextNode())
+                    callNode(request); 
+                else {
+                    pendingRequests.remove(uuid);
+                    displayErrorOperation(request.getCommandNumber(), "every node failed");
+                }
+                break;
+
+                default:
+                    pendingRequests.remove(uuid);
+                    displayErrorOperation(request.getCommandNumber(), errorMessage); 
+                    break;
+        }
+
     }
 
     public synchronized static void displaySuccessOperation(Long commandNumber, String statusMessage, String extraOutput) {

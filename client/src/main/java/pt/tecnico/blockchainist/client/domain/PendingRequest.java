@@ -1,5 +1,7 @@
 package pt.tecnico.blockchainist.client.domain;
 
+import pt.tecnico.blockchainist.auth.AuthInfo;
+
 public class PendingRequest {
 
     private long commandNumber;
@@ -41,5 +43,13 @@ public class PendingRequest {
 
     public Integer getOrgIndex() {
         return this.orgIndex;
+    }
+
+    public boolean tryNextNode() {
+        if (orgIndex < AuthInfo.getAllOrganizations().size() - 1) { 
+            orgIndex++; 
+            return true; 
+        }
+        return false;
     }
 }
