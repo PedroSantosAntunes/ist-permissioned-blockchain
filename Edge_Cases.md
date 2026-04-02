@@ -3,7 +3,7 @@
 
 ## Caso 1: Ordem de execução diferente entre Nó e Sequencer após transferência otimizada
 
-**Objetivo**: Justificar a necessidade de bloquear o broadcast durante a execução de transferências otimizadas.
+**Objetivo**: Justificar a necessidade de bloquear o broadcast durante a execução de transferências otimizadas.  
 
 | Transferência | Wallet Origem | Wallet Destino | Valor | Estado        |
 | ------------- | ------------- | -------------- | ----- | ------------- |
@@ -21,17 +21,17 @@ T2 volta do Sequencer e é executada
 No Nó: T1, T2  
 No Sequencer: T2, T1  
 
-**Explicação**
+**Explicação**  
 Entre T1 ser executada e ser feito o seu broadcast, pode ocorrer o broadcast de T2 resultando na execução inconsistente de duas transações com uma relação causal.
 
-**Solução:**
+**Solução:**  
 Enquanto uma transação otimizada não acabar de ser executada e esperar pela resposta do seu broadcast, não é feito nenhum broadcast de transações que estejam causalmente relacionadas com a otimizada.
 
 
 
 ## Caso 2: Ordem de execução diferente quando se otimiza uma transação enquanto existem um delete pending
 
-Objetivo: Justificar porque é que não podemos otimizar transferências quando existem deletes que foram para o sequencer e ainda não voltaram
+**Objetivo**: Justificar porque é que não podemos otimizar transferências quando existem deletes que foram para o sequencer e ainda não voltaram
 
 | Transação/Operação | Wallet Origem | Wallet Destino | Valor | Estado         |
 | ------------------ | ------------- | -------------- | ----- | -------------- |
@@ -48,16 +48,16 @@ D1 retorna do Sequencer e é executada
 Nó: T1, D1  
 Sequencer: D1, T1  
 
-**Explicação**
+**Explicação**  
 Se D1 for enviado antes e T1 for otimizada antes de receber a confirmação do delete, a ordem final difere entre Nó e Sequencer, causando inconsistência na execução.
 
-**Solução:**
+**Solução:**  
 Não se devem otimizar transações que têm deletes pendentes associados a uma das suas wallets, garantindo isso com um contador de pending deletes.
 
 
 ## Caso 3: Ordem de execução diferente quando se otimiza uma transação enquanto existem vários deletes pending
 
-Objetivo: Justificar o uso de um counter me vez de uma flag.  
+**Objetivo**: Justificar o uso de um counter me vez de uma flag.  
 
 | Transação/Operação | Wallet Origem | Wallet Destino | Valor | Estado         |
 | ------------------ | ------------- | -------------- | ----- | -------------- |
@@ -84,13 +84,15 @@ Nó: D1, T1, D2
 Sequencer: D1, D2, T1  
 
 **Explicação**  
-Ao utilizarmos uma flag para os pending deletes, não é possível saber quantos deletes devem ser aguardados antes de otimizar uma transferência.
+Ao utilizarmos uma flag para os pending deletes, não é possível saber quantos deletes devem ser aguardados antes de otimizar uma transferência.  
 
 **Solução:**  
-Utilizar um contador em vez de uma flag permite saber quantos pending deletes existem.
+Utilizar um contador em vez de uma flag permite saber quantos pending deletes existem.  
 
 
 ## Caso 4: Ordem de execução diferente quando se otimiza uma transação enquanto existem outras transações pending para a mesma source wallet
+
+**Objetivo**: Justificar porque é que não podemos otimizar transferências quando existem outras transferências da mesma source wallet que foram para o sequencer e ainda não voltaram  
 
 | Wallet | Saldo |
 | ------ | ----- |
@@ -137,7 +139,7 @@ Utilizar um contador permite saber quantos pending transfers existem.
 
 ## Caso 5: Otimização de transações pendentes  
 
-Objetivo: Justificar a utlização do pending Deficit para otimizar mais transferências.  
+**Objetivo**: Justificar a utlização do pending Deficit para otimizar mais transferências.  
 
 | Wallet | Saldo |
 | ------ | ----- |
@@ -166,4 +168,67 @@ Se T1 e T2 forem enviadas, quando T3 chega não pode ser otimizado porque existe
 Manter uma contagem do défice de cada carteira, sendo o défice o total montante pedido para remover de cada carteira. Permitindo calcular o valor minimo presente em cada carteira após todas as transferências serem concluidas.  
 
 Nota:  
-Usamos a fórmula `Balance Real - pendingDeficit >= Transfer Value` para avaliar se a transferência é otimizável.
+Usamos a fórmula `Balance Real - pendingDeficit >= Transfer Value` para avaliar se a transferência é otimizável.  
+
+
+
+## Caso 6: Ordem de execução diferente entre o Nó e Sequencer quando se guarda informação pending em wallets  
+
+**Objetivo**: Justificar a existência de uma estrutura separada para guardar a informação pending de cada wallet.
+
+**Operações:**  
+C1 wA1  
+D1 wA1  
+T1 User bc wA1 1 0 0  
+
+**Estado inicial:**
+
+| Wallet | Estado     | Saldo |
+| ------ | ---------- | ------|
+| wA1    | não existe | -     |
+| BC     | existe     | 1     |
+
+**Ordem de acontecimentos:**  
+<pre>
+Cliente                         Nó                               Sequencer
+ |                              |                                    |
+C1 ---------------------------->|                                    |
+D1 ---------------------------->|                                    |
+ |                  delete não incrementa counter                    |
+ |                     porque a wA1 não existe                       |
+ |                              C1---------------------------------->| 
+ |                              |                            (C1 fecha bloco)  
+ |                              D1---------------------------------->|  
+ |                              |<----------------------------------C1  
+ |                              |                                    |
+ |                           cria wA1                                |
+T1----------------------------->|                                    |
+ |                  como wA1 tem delete counter a 0                  |
+ |                pode otimizar e executar localmente                |
+ |                              |                                    |
+ |                          executa T1                               |
+ |                             T1----------------------------------->|
+ |                              |                           (bloco de D1 fecha)
+ |                              |<-----------------------------------D1
+ |                          elimina wA1                              |
+</pre>
+
+**Resultado de execução:**  
+Nó: C1, T1, D1  
+| Wallet | Estado     | Saldo |
+| ------ | ---------- | ------|
+| wA1    | existe     | 1     |
+| BC     | existe     | 0     |
+
+Sequencer: C1, D1, T1  
+| Wallet | Estado     | Saldo |
+| ------ | ---------- | ------|
+| wA1    | não existe | -     |
+| BC     | existe     | 1     |
+
+
+**Explicação**  
+Como a wallet wA1 ainda não existia quando D1 chegou não foi possível guardar o pending delete, resultando na otimização de T1 quando esta chega e deixando o estado do Nó inconsitente com o Sequencer.  
+
+**Solução:**  
+Usar uma estrutura separada para guardar a informação pendente de cada carteira, mesmo que a carteira ainda não exista.  
