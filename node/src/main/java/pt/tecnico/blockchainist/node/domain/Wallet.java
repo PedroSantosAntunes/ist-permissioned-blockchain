@@ -11,16 +11,12 @@ public class Wallet {
     private String userId;
     private long balance;
 
-    // private int pendingDeleteCounter;
-    // private long pendingDeficitAmount;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Wallet(String walletId, String userId, long balance){
         this.walletId = walletId;
         this.userId = userId;
         this.balance = balance;
-        // this.pendingDeficitAmount = 0;
-        // this.pendingDeleteCounter = 0;
     }
 
     public String getWalletId(){
@@ -46,32 +42,6 @@ public class Wallet {
     public ReentrantReadWriteLock.WriteLock writeLock() {
         return lock.writeLock();
     }
-
-    // Delete counter methods
-    // public boolean isDeleting() {
-    //     return pendingDeleteCounter > 0;
-    // }
-
-    // public void incrementDeleting() {
-    //     pendingDeleteCounter++;
-    // }
-
-    // public void decrementDeleting() {
-    //     pendingDeleteCounter--;
-    // }
-
-    // // Transfer counter methods
-    // public boolean hasSpendableBalance(long value) {
-    //     return value <= balance - pendingDeficitAmount;
-    // }
-
-    // public void incrementTransfer(Long amount) {
-    //     pendingDeficitAmount += amount;
-    // }
-
-    // public void decrementTransfer(Long amount) {
-    //     pendingDeficitAmount -= amount;
-    // }
 
     @Override
     public String toString() {

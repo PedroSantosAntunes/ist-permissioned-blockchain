@@ -19,7 +19,6 @@ public class NodeState {
     String organization;
     
     public record ReadResult(long balance, int blockNumber) {}
-    public record TransferResult(InternalResponseStatus status, int optimization) {}
     
     private static final Pattern ID_PATTERN = Pattern.compile("^[a-zA-Z0-9]+$");
 
