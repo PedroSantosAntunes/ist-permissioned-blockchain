@@ -126,10 +126,6 @@ public class NodeState {
             completedTransactionsLock.readLock().unlock();
         }
 
-        
-        // TODO - increase counter do delete para a wallet
-        // Increase the number of pending deletes associated to the wallet
-
         sequencer.broadcastDeleteWallet(uuid, userId, walletId);
 
         try {
@@ -224,12 +220,7 @@ public class NodeState {
             completedTransactionsLock.readLock().unlock();
         }
 
-        // TODO - increase counter do transfer para a src wallet
-
         sequencer.broadcastTransfer(uuid, srcUserId, srcWalletId, dstWalletId, amount);
-
-        // second.writeLock().unlock();
-        // first.writeLock().unlock();
 
         try {
             Debug.log("\n-----\nNode: waiting for transfer transaction to be executed!\n");
@@ -410,11 +401,7 @@ public class NodeState {
 
         for (TransactionRecord record : block_transactions) {
             // Avoids to duplicate a transfer that was optimizable and executed locally 
-            if (completedTransactions.containsKey(record.getUuid())) {
-                // TODO - decrease counter do transfer para a src wallet
-                // MIKE: n percebo
-                continue;
-            }
+            if (completedTransactions.containsKey(record.getUuid())) {continue;}
 
             InternalResponseStatus requestStatus = executeTransaction(record);
 
@@ -502,13 +489,10 @@ public class NodeState {
             InternalResponseStatus status = canDeleteWallet(wallet, record.getUserId());
             
             if (status != InternalResponseStatus.OK) { 
-                // TODO - decrease counter (verificar se pertence a esta orgA) do delete para a wallet
                 return status; 
             }
         
             wallets.remove(record.getWalletId());
-
-            // TODO - decrease counter (verificar se pertence a esta orgA) do delete para a wallet
 
             Debug.log("Wallet deleted: " + record.getWalletId());
 
@@ -547,7 +531,6 @@ public class NodeState {
         }
         if (dstWallet == null){ 
             System.err.println("Wallet id does not exist: " + record.getDstWalletId());
-            // TODO decrease counter (verificar se pertence a esta orgA) do transfer para a scrWallet
             return InternalResponseStatus.WALLET_NOT_FOUND; 
         }
 
@@ -569,8 +552,6 @@ public class NodeState {
 
             srcWallet.setBalance(srcWallet.getBalance() - record.getAmount());
             dstWallet.setBalance(dstWallet.getBalance() + record.getAmount());
-
-            // TODO decrease counter (verificar se pertence a esta orgA) do transfer para a scrWallet
 
             Debug.log("Transferred: " + record.getAmount() + " : " + record.getSrcWalletId() + " > " + record.getDstWalletId());
             return InternalResponseStatus.OK;
