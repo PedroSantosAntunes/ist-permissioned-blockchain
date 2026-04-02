@@ -185,8 +185,11 @@ public class NodeState {
                 if (completedTransactions.containsKey(uuid)) {
                     System.err.println("Duplicate transaction: " + uuid);
                     completedTransactionsLock.writeLock().unlock();
+                    second.writeLock().unlock();
+                    first.writeLock().unlock();
                     return InternalResponseStatus.DUPLICATE_TRANSACTION;
                 }
+
                 srcWallet.setBalance(srcWallet.getBalance() - amount);
                 dstWallet.setBalance(dstWallet.getBalance() + amount);
                 completedTransactions.put(uuid, InternalResponseStatus.OK);
@@ -196,6 +199,8 @@ public class NodeState {
 
                 return executedResponseStatus;
             }
+            second.writeLock().unlock();
+            first.writeLock().unlock();
         }
 
         completedTransactionsLock.readLock().lock();
@@ -315,13 +320,18 @@ public class NodeState {
         second.getLock().lock();
 
         try {
-            if (AuthInfo.getOrganization(dstWallet.getUserId()).equals(this.organization)
-                && srcPwt.getDeleteCounter() == 0 && dstPwt.getDeleteCounter() == 0 
-                && (srcWallet.getBalance() - srcPwt.getDeficitAmount()) >= amount
-            ) 
-            {
+            boolean orgMatches = AuthInfo.getOrganization(dstWallet.getUserId()).equals(this.organization);
+            boolean srcNotDeleted = srcPwt.getDeleteCounter() == 0;
+            boolean dstNotDeleted = dstPwt.getDeleteCounter() == 0;
+            boolean sufficientBalance = (srcWallet.getBalance() - srcPwt.getDeficitAmount()) >= amount;
+
+            if (orgMatches && srcNotDeleted && dstNotDeleted && sufficientBalance) {
                 return InternalResponseStatus.EXECUTED_LOCALY;
             }
+            if (!orgMatches) Debug.log("Node: Transaction not optimized, organization does not match");
+            if (!srcNotDeleted) Debug.log("Node: Transaction not optimized, source delete counter is: " + srcPwt.getDeleteCounter());
+            if (!dstNotDeleted) Debug.log("Node: Transaction not optimized, destination delete counter is: " + dstPwt.getDeleteCounter());
+            if (!sufficientBalance) Debug.log("Node: Transaction not optimized, insufficient balance. Real balance (" + srcWallet.getBalance() + ") - deficit ("+ srcPwt.getDeficitAmount() +") < " + amount);
 
             return InternalResponseStatus.OK;
         } finally {
