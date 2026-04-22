@@ -323,15 +323,14 @@ public class NodeState {
         blockCompleted.readLock().lock();
         if (node_block_counter < blockNumber) { 
             CompletableFuture<Void> future = pendingBlock.computeIfAbsent(blockNumber, k -> new CompletableFuture<>());
+            blockCompleted.readLock().unlock();
             try {
                 Debug.log("\n-----\nNode: waiting for node to update its blockchain to send an updated balance!\n");
                 future.get();
             } catch (ExecutionException | InterruptedException e ) {
-                blockCompleted.readLock().unlock();
                 return new ReadResult(-1L, -1);
-            } 
+            }
         }
-        blockCompleted.readLock().unlock();
 
         Wallet wallet = wallets.getOrDefault(walletId, null);
         if (wallet == null){ return new ReadResult(-1L, -1); }
@@ -389,7 +388,7 @@ public class NodeState {
         }
         synchronized (blocksLock) {
             blocks.add(block);
-            
+
             blockCompleted.writeLock().lock();
             node_block_counter++;
             CompletableFuture<Void> future = pendingBlock.remove(block.getBlockNumber());
